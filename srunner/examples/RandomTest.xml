@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<scenarios>
+    <!-- <scenario name="RandomTest_1" type="RandomTest" town="Town04">
+        <ego_vehicle x="44.8" y="-98.3" z="0" yaw="-18" model="vehicle.lincoln.mkz2017" />
+    </scenario> -->
+    <!-- <scenario name="RandomTest_1" type="RandomTest" town="Town04">
+        <ego_vehicle x="4.3" y="-196" z="3" yaw="270" model="vehicle.lincoln.mkz2017" />
+        <weather cloudiness="0" precipitation="0" precipitation_deposits="0" wind_intensity="0" sun_azimuth_angle="0" sun_altitude_angle="75" />
+    </scenario> -->
+        <scenario name="RandomTest_1" type="RandomTest" town="Town04">
+        <ego_vehicle x="7.5" y="-210" z="3" yaw="270" model="vehicle.lincoln.mkz2017" />
+        <weather cloudiness="0" precipitation="0" precipitation_deposits="0" wind_intensity="0" sun_azimuth_angle="0" sun_altitude_angle="75" />
+    </scenario>
+</scenarios>
