@@ -1249,10 +1249,17 @@ class LaneChange(WaypointFollower):
         position_actor = CarlaDataProvider.get_map().get_waypoint(self._actor.get_location())
 
         # calculate plan with scenario_helper function
-        self._plan, self._target_lane_id = generate_target_waypoint_list_multilane(
-            position_actor, self._direction, self._distance_same_lane,
-            self._distance_other_lane, self._distance_lane_change, check='true')
+        if generate_target_waypoint_list_multilane(position_actor, self._direction, self._distance_same_lane,
+            self._distance_other_lane, self._distance_lane_change, check='true') != None:
+
+            self._plan, self._target_lane_id = generate_target_waypoint_list_multilane(
+                position_actor, self._direction, self._distance_same_lane,
+                self._distance_other_lane, self._distance_lane_change, check='true')
+        else:
+            print("lane change not available")
+            
         super(LaneChange, self).initialise()
+
 
     def update(self):
         status = super(LaneChange, self).update()

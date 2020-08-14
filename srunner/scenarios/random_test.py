@@ -54,7 +54,7 @@ from srunner.scenarios.actor_dict import (ActorDict,
 
 # return a list of potential scenarios
 def list_potential_scenarios():
-    potential_scenario_names = ["DynamicObstaclesAhead", "CutIn", "VehiclesAhead", "StationaryObstaclesAhead"]#, , "CutIn", "ChangeLane"]
+    potential_scenario_names = ["DynamicObstaclesAhead", "CutIn", "VehiclesAhead"]#, "StationaryObstaclesAhead" , "CutIn", "ChangeLane"]
     # scenario_description = {
     #                         'name': scenario_name,
     #                         'other_actors': other_vehicles,
@@ -70,20 +70,29 @@ def list_potential_triggers(map):
     trigger_waypoint = map.get_waypoint(trigger_location)
     potential_triggers.append(trigger_waypoint)
 
-    # second trigger
-    trigger_location = carla.Location(20, -280, 3)
+    trigger_location = carla.Location(20, -260, 3)
     trigger_waypoint = map.get_waypoint(trigger_location)
     potential_triggers.append(trigger_waypoint)
 
-    trigger_location = carla.Location(40, -315, 3)
+    # second trigger
+    # trigger_location = carla.Location(28, -280, 3)
+    # # trigger_location = carla.Location(20, -280, 3)
+    # trigger_waypoint = map.get_waypoint(trigger_location)
+    # potential_triggers.append(trigger_waypoint)
+
+    trigger_location = carla.Location(49, -320, 3)
+
+    # trigger_location = carla.Location(40, -315, 3)
     trigger_waypoint = map.get_waypoint(trigger_location)
     potential_triggers.append(trigger_waypoint)
     # third trigger
-    trigger_location = carla.Location(62, -336, 3)
+    trigger_location = carla.Location(65, -339, 3)
+    # trigger_location = carla.Location(62, -336, 3)
     trigger_waypoint = map.get_waypoint(trigger_location)
     potential_triggers.append(trigger_waypoint)
     # 4th trigger
     trigger_location = carla.Location(109, -360, 3)
+    # trigger_location = carla.Location(109, -360, 3)
     trigger_waypoint = map.get_waypoint(trigger_location)
     potential_triggers.append(trigger_waypoint)
     
@@ -109,7 +118,7 @@ def list_potential_triggers(map):
 class RandomTest(BasicScenario):
     
     def __init__(self, world, ego_vehicles, config, randomize=False, debug_mode=False, criteria_enable=True,
-                 timeout=120):
+                 timeout=80):
         
         self._map = CarlaDataProvider.get_map()
         self._world = world
@@ -159,7 +168,8 @@ class RandomTest(BasicScenario):
                 print("actor dict class not implemented")
                 exit(1)
 
-            self.scenario_list.append((scenario, actor_dict))
+            if not actor_dict.failed:
+                self.scenario_list.append((scenario, actor_dict))
         # for trigger in self.selected_triggers:
         #     print(str(trigger) + " | ")
         #     print("\n")
@@ -222,9 +232,20 @@ class RandomTest(BasicScenario):
 
     def _initialize_dynamic_obstacles_ahead(self, actor_dict):
         actor_dict.speed = 3 + (0.4 * actor_dict.num_lane_changes)
-        walker = CarlaActorPool.request_new_actor('walker.*', actor_dict.start_transform)
-        walker.set_transform(actor_dict.default_transform)
-        walker.set_simulate_physics(enabled=False)
+        while True:
+            try:
+                actor_dict.start_transform, orientation = actor_dict._calculate_transform()
+                walker = CarlaActorPool.request_new_actor('walker.*', actor_dict.start_transform)
+                walker.set_transform(actor_dict.start_transform)
+                walker.set_simulate_physics(enabled=False)
+                print("walker spawned at" + str(actor_dict.start_transform))
+                break
+
+            except RuntimeError as r:
+                actor_dict._update_transform()
+    
+        default = actor_dict._calculate_default(actor_dict.start_transform)
+        walker.set_transform(default)
         index = len(self.other_actors)
         actor_dict.index = index
         print("index of dynamic crossing actor: " + str(index))
@@ -268,11 +289,32 @@ class RandomTest(BasicScenario):
 
                 keep_driving = WaypointFollower(self.other_actors[actor_dict.index], actor_dict.speed)
                 
+                drive = py_trees.composites.Parallel("Driving for a distance",
+                                                    policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE)
+                drive_success = DriveDistance(self.other_actors[actor_dict.index], random.randint(50,100))
+                drive.add_child(drive_success)
+                drive.add_child(keep_driving)
+                stand = StandStill(self.other_actors[actor_dict.index], "stand still", random.randint(1,5))
+                stop = StopVehicle(self.other_actors[actor_dict.index], 1.0)
+                accelerate = AccelerateToVelocity(self.other_actors[actor_dict.index], 1.0, actor_dict.speed)
                 # Build behavior tree
                 sequence = py_trees.composites.Sequence("VehiclesAhead behavior sequence")
                 sequence.add_child(wait_for_trigger)
                 sequence.add_child(start_transform)
-                sequence.add_child(keep_driving)
+                
+                # stop_condition = py_trees.composites.Parallel("stop condition",
+                #                             policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE)
+                # stop_condition.add_child(keep_driving)
+                # stop_condition.add_child(drive_success)
+                if random.randint(0,1) != -1:
+                    sequence.add_child(drive)
+                    sequence.add_child(stop)
+                    sequence.add_child(accelerate)
+                    sequence.add_child(keep_driving) #stop_condition
+                    print("lead vehicle stop behavior added")
+                else:
+                    sequence.add_child(keep_driving) #stop_condition
+                
                 sequence.add_child(ActorDestroy(self.other_actors[actor_dict.index]))
                 root.add_child(sequence)
 

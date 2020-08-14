@@ -12,13 +12,14 @@ class ActorDict(object):
         self.name = 'Generic'
         self.index = -1 # needs to be updated when added to other_actors list.
 
-        self.start_dist = random.randint(10, 70) #randomize later
+        self.start_dist = random.randint(50, 150) #randomize later
         self.speed = random.randint(10, 50) #randomize later
         self.trigger = trigger #reference waypoint
 
         self.start_transform = None
         self.default_transform = None
 
+        self.failed = False
         # self._calculate_transform() #needs to be calculated
 
     # needs to be overriden
@@ -105,12 +106,15 @@ class StationaryObstaclesDict(ActorDict):
 class DynamicObstaclesDict(ActorDict):
     def __init__(self, trigger, world_map):
         super().__init__(trigger, world_map)
-        self.time_to_reach = random.randint(5, 15) #randonmize later
+        self.time_to_reach = random.randint(3, 8)
         self.num_lane_changes = 1
         self.offset = {"orientation": 270, "position": 90, "z": 0.6, "k": 1.0}
         self.start_transform, self.orientation_yaw = self._calculate_transform()
         self.default_transform = self._calculate_default(self.start_transform)
         self.name = "DynamicObstaclesAhead"
+        
+        self._spawn_attempted = 1
+        self._number_of_attempts = 20
 
     def _get_sidewalk_waypoint(self):
         waypoint = self.trigger
@@ -130,6 +134,14 @@ class DynamicObstaclesDict(ActorDict):
                 waypoint = wp_next
         return waypoint
 
+    def _update_transform(self):
+        print("Base transform is blocking objects ", self.start_transform)
+        self.start_dist += 0.4
+        print("self.start_dist after update: " + str(self.start_dist))
+        self._spawn_attempted += 1
+        if self._spawn_attempted >= self._number_of_attempts:
+            raise r
+
     def _calculate_transform(self):
         waypoint = self._get_sidewalk_waypoint()
         lane_width = waypoint.lane_width
@@ -137,6 +149,7 @@ class DynamicObstaclesDict(ActorDict):
             stop_at_junction = False
         else:
             stop_at_junction = True
+        print("self.start_dist when calculating: " + str(self.start_dist))
         location, _ = get_location_in_distance_from_wp(waypoint, self.start_dist, stop_at_junction)
         waypoint = self.map.get_waypoint(location)
 
@@ -153,14 +166,18 @@ class CutInDict(ActorDict):
     def __init__(self, trigger, world_map):
         super().__init__(trigger, world_map)
         self.name = "CutIn"
-        self.speed = 40
-        self.delta_speed = 10 # randomize later
-        self.trigger_distance = 30 # randomize later
+        self.speed = 90
+        self.delta_speed = random.randint(70, 80) # 10 randomize later
+        self.trigger_distance = 30 # 30 randomize later
         self.spawn_point = self.trigger
+        
         # self.trigger, _ = get_waypoint_in_distance(self.spawn_point, 60)
-        if self.trigger.get_left_lane().lane_type != carla.LaneType.Driving:
+        if self.trigger.get_left_lane() == None and self.trigger.get_right_lane == None:
+            print("lane change not possible")
+            self.failed = True
+        elif self.trigger.get_left_lane() == None or self.trigger.get_left_lane().lane_type != carla.LaneType.Driving:
             self.direction = "right"
-        elif self.trigger.get_right_lane().lane_type != carla.LaneType.Driving:
+        elif self.trigger.get_right_lane() == None or self.trigger.get_right_lane().lane_type != carla.LaneType.Driving:
             self.direction = "left"
         else:
             self.direction = random.choice(["left, right"])
@@ -176,7 +193,9 @@ class CutInDict(ActorDict):
             self.spawn_point = self.spawn_point.get_right_lane()
         
         spawn_location = self.spawn_point.transform.location
-        # ahead_location, _ = get_location_in_distance_from_wp(self.trigger, 20, False)
+        ahead_location, _ = get_location_in_distance_from_wp(self.trigger, 10, False)
+        self.trigger = self.map.get_waypoint(ahead_location)
+
         # change_x = ahead_location.x - trigger_location.x
         # change_y = ahead_location.y - trigger_location.y
         actor_location = carla.Location(spawn_location.x,

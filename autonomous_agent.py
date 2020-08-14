@@ -595,15 +595,18 @@ def game_loop(args):
                                    spawn_point.location.y,
                                    spawn_point.location.z))
         else:
-            agent = BehaviorAgent(world.player, behavior=args.behavior)
+            agent = BehaviorAgent(world.player, behavior=args.behavior, ignore_traffic_light=True)
 
             spawn_points = world.map.get_spawn_points()
             random.shuffle(spawn_points)
 
-            if spawn_points[0].location != agent.vehicle.get_location():
-                destination = spawn_points[0].location
-            else:
-                destination = spawn_points[1].location
+            # SET DESTINATION HERE
+            destination = world.map.get_waypoint(carla.Location(200, -250, 3)).transform.location
+
+            # if spawn_points[0].location != agent.vehicle.get_location():
+            #     destination = spawn_points[0].location
+            # else:
+            #     destination = spawn_points[1].location
 
             agent.set_destination(agent.vehicle.get_location(), destination, clean=True)
 
