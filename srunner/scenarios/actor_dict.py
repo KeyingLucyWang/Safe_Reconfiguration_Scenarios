@@ -166,8 +166,8 @@ class CutInDict(ActorDict):
     def __init__(self, trigger, world_map):
         super().__init__(trigger, world_map)
         self.name = "CutIn"
-        self.speed = 30
-        self.delta_speed = random.randint(10, 30) # 10 randomize later
+        self.speed = 20
+        self.delta_speed = random.randint(20, 30) # 10 randomize later
         self.trigger_distance = 30 # 30 randomize later
         self.spawn_point = self.trigger
         

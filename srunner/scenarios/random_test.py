@@ -293,7 +293,7 @@ class RandomTest(BasicScenario):
                 wait_for_trigger = InTriggerDistanceToLocation(self.ego_vehicles[0], actor_dict.trigger.transform.location, 10)
                 start_transform = ActorTransformSetter(self.other_actors[actor_dict.index], actor_dict.start_transform)
 
-                keep_driving = WaypointFollower(self.other_actors[actor_dict.index], actor_dict.speed)
+                keep_driving = WaypointFollower(self.other_actors[actor_dict.index], actor_dict.speed, avoid_collision=True)
                 
                 drive = py_trees.composites.Parallel("Driving for a distance",
                                                     policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE)
@@ -346,7 +346,7 @@ class RandomTest(BasicScenario):
 
                 # accelerate
                 accelerate = AccelerateToCatchUp(self.other_actors[actor_dict.index], self.ego_vehicles[0], throttle_value=1,
-                                         delta_velocity=actor_dict.delta_speed, trigger_distance=5, max_distance=500)
+                                         delta_velocity=actor_dict.delta_speed, trigger_distance=5, max_distance=100)
                 
                 sequence.add_child(accelerate)
 
@@ -354,13 +354,13 @@ class RandomTest(BasicScenario):
                 # lane_change = None
                 if actor_dict.direction == 'left':
                     lane_change = LaneChange(
-                        self.other_actors[actor_dict.index], speed=60, direction='right', distance_same_lane=5, distance_other_lane=300)
+                        self.other_actors[actor_dict.index], speed=10, direction='right', distance_same_lane=50, distance_other_lane=10)
                     sequence.add_child(lane_change)    
                 else:
                     lane_change = LaneChange(
-                        self.other_actors[actor_dict.index], speed=60, direction='left', distance_same_lane=5, distance_other_lane=300)
+                        self.other_actors[actor_dict.index], speed=10, direction='left', distance_same_lane=50, distance_other_lane=10)
                     sequence.add_child(lane_change)
-
+                sequence.add_child(WaypointFollower(self.other_actors[actor_dict.index], target_speed=20, avoid_collision=True))
                 endcondition = DriveDistance(self.other_actors[actor_dict.index], 150)
                 parallel = py_trees.composites.Sequence("Behavior", policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE)
                 parallel.add_child(sequence)
@@ -434,7 +434,7 @@ class RandomTest(BasicScenario):
         """
         criteria = []
 
-        collision_criterion = CollisionTest(self.ego_vehicles[0], optional=False, name="CheckCollisions", terminate_on_failure=True)
+        collision_criterion = CollisionTest(self.ego_vehicles[0], optional=False, name="CheckCollisions", terminate_on_failure=False)
         target_reached = InRadiusRegionTest(self.ego_vehicles[0], 200, -249, 30)
         # distance_driven = DrivenDistanceTest(self.ego_vehicles[0], 2000, )
         criteria.append(collision_criterion)
