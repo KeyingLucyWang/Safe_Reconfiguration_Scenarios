@@ -12,7 +12,7 @@ class ActorDict(object):
         self.name = 'Generic'
         self.index = -1 # needs to be updated when added to other_actors list.
 
-        self.start_dist = random.randint(50, 150) #randomize later
+        self.start_dist = random.randint(80, 120) #randomize later
         self.speed = random.randint(10, 50) #randomize later
         self.trigger = trigger #reference waypoint
 
@@ -48,16 +48,16 @@ class LeadVehicleDict(ActorDict):
     def _calculate_transform(self):
         waypoint, _ = get_waypoint_in_distance(self.trigger, self.start_dist)
         lane = random.randint(0, 2)
-        if lane == 0:
-            pass
-        elif lane == 1:
-            left_lane = waypoint.get_left_lane()
-            if left_lane:
-                waypoint = left_lane
-        elif lane == 2:
-            right_lane = waypoint.get_right_lane()
-            if right_lane:
-                waypoint = right_lane
+        # if lane == 0:
+        #     pass
+        # elif lane == 1:
+        #     left_lane = waypoint.get_left_lane()
+        #     if left_lane:
+        #         waypoint = left_lane
+        # elif lane == 2:
+        #     right_lane = waypoint.get_right_lane()
+        #     if right_lane:
+        #         waypoint = right_lane
 
         start_transform = carla.Transform(
                 carla.Location(waypoint.transform.location.x,
@@ -135,9 +135,9 @@ class DynamicObstaclesDict(ActorDict):
         return waypoint
 
     def _update_transform(self):
-        print("Base transform is blocking objects ", self.start_transform)
+        # print("Base transform is blocking objects ", self.start_transform)
         self.start_dist += 0.4
-        print("self.start_dist after update: " + str(self.start_dist))
+        # print("self.start_dist after update: " + str(self.start_dist))
         self._spawn_attempted += 1
         if self._spawn_attempted >= self._number_of_attempts:
             raise r
@@ -149,7 +149,7 @@ class DynamicObstaclesDict(ActorDict):
             stop_at_junction = False
         else:
             stop_at_junction = True
-        print("self.start_dist when calculating: " + str(self.start_dist))
+        # print("self.start_dist when calculating: " + str(self.start_dist))
         location, _ = get_location_in_distance_from_wp(waypoint, self.start_dist, stop_at_junction)
         waypoint = self.map.get_waypoint(location)
 
@@ -166,8 +166,8 @@ class CutInDict(ActorDict):
     def __init__(self, trigger, world_map):
         super().__init__(trigger, world_map)
         self.name = "CutIn"
-        self.speed = 90
-        self.delta_speed = random.randint(70, 80) # 10 randomize later
+        self.speed = 30
+        self.delta_speed = random.randint(10, 30) # 10 randomize later
         self.trigger_distance = 30 # 30 randomize later
         self.spawn_point = self.trigger
         

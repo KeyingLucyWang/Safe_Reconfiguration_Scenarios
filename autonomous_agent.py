@@ -585,30 +585,21 @@ def game_loop(args):
         hud = HUD(args.width, args.height)
         world = World(client.get_world(), hud)
         controller = KeyboardControl(world)
+        
+        agent = BehaviorAgent(world.player, behavior=args.behavior, ignore_traffic_light=True)
 
-        if args.agent == "Roaming":
-            agent = RoamingAgent(world.player)
-        elif args.agent == "Basic":
-            agent = BasicAgent(world.player)
-            spawn_point = world.map.get_spawn_points()[0]
-            agent.set_destination((spawn_point.location.x,
-                                   spawn_point.location.y,
-                                   spawn_point.location.z))
-        else:
-            agent = BehaviorAgent(world.player, behavior=args.behavior, ignore_traffic_light=True)
+        spawn_points = world.map.get_spawn_points()
+        random.shuffle(spawn_points)
 
-            spawn_points = world.map.get_spawn_points()
-            random.shuffle(spawn_points)
+        # SET DESTINATION HERE
+        destination = world.map.get_waypoint(carla.Location(200, -250, 3)).transform.location
 
-            # SET DESTINATION HERE
-            destination = world.map.get_waypoint(carla.Location(200, -250, 3)).transform.location
+        # if spawn_points[0].location != agent.vehicle.get_location():
+        #     destination = spawn_points[0].location
+        # else:
+        #     destination = spawn_points[1].location
 
-            # if spawn_points[0].location != agent.vehicle.get_location():
-            #     destination = spawn_points[0].location
-            # else:
-            #     destination = spawn_points[1].location
-
-            agent.set_destination(agent.vehicle.get_location(), destination, clean=True)
+        agent.set_destination(agent.vehicle.get_location(), destination, clean=True)
 
         clock = pygame.time.Clock()
 
@@ -620,42 +611,30 @@ def game_loop(args):
             if not world.world.wait_for_tick(10.0):
                 continue
 
-            if args.agent == "Roaming" or args.agent == "Basic":
-                if controller.parse_events():
-                    return
+            agent.update_information(world)
 
-                # as soon as the server is ready continue!
-                world.world.wait_for_tick(10.0)
+            if (not world.tick(clock)):
+                print("Failure: scenario terminated")
+                break
+            world.render(display)
+            pygame.display.flip()
 
-                world.tick(clock)
-                world.render(display)
-                pygame.display.flip()
-                control = agent.run_step()
-                control.manual_gear_shift = False
-                world.player.apply_control(control)
-            else:
-                agent.update_information(world)
+            # Set new destination when target has been reached
+            if len(agent.get_local_planner().waypoints_queue) < num_min_waypoints and args.loop:
+                agent.reroute(spawn_points)
+                tot_target_reached += 1
+                world.hud.notification("The target has been reached " +
+                                        str(tot_target_reached) + " times.", seconds=4.0)
 
-                world.tick(clock)
-                world.render(display)
-                pygame.display.flip()
+            elif len(agent.get_local_planner().waypoints_queue) == 0 and not args.loop:
+                print("Target reached, mission accomplished...")
+                break
 
-                # Set new destination when target has been reached
-                if len(agent.get_local_planner().waypoints_queue) < num_min_waypoints and args.loop:
-                    agent.reroute(spawn_points)
-                    tot_target_reached += 1
-                    world.hud.notification("The target has been reached " +
-                                           str(tot_target_reached) + " times.", seconds=4.0)
+            speed_limit = world.player.get_speed_limit()
+            agent.get_local_planner().set_speed(speed_limit)
 
-                elif len(agent.get_local_planner().waypoints_queue) == 0 and not args.loop:
-                    print("Target reached, mission accomplished...")
-                    break
-
-                speed_limit = world.player.get_speed_limit()
-                agent.get_local_planner().set_speed(speed_limit)
-
-                control = agent.run_step()
-                world.player.apply_control(control)
+            control = agent.run_step()
+            world.player.apply_control(control)
 
     finally:
 
@@ -714,10 +693,6 @@ def main():
         choices=["cautious", "normal", "aggressive"],
         help='Choose one of the possible agent behaviors (default: normal) ',
         default='normal')
-    argparser.add_argument("-a", "--agent", type=str,
-                           choices=["Behavior", "Roaming", "Basic"],
-                           help="select which agent to run",
-                           default="Behavior")
     argparser.add_argument(
         '-s', '--seed',
         help='Set seed for repeating executions (default: None)',

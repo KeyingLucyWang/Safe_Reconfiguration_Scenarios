@@ -74,6 +74,14 @@ class BehaviorAgent(Agent):
         elif behavior == 'aggressive':
             self.behavior = Aggressive()
 
+
+    def get_reaction_time(self):
+        # cautious agent
+        if self.behavior.overtake_counter == -1:
+            return random.randint(2, 4)
+        else: # aggressive agent
+            return random.randint(6, 8)
+
     def update_information(self, world):
         """
         This method updates the information regarding the ego
@@ -426,3 +434,6 @@ class BehaviorAgent(Agent):
                 target_speed= min(self.behavior.max_speed, self.speed_limit - self.behavior.speed_lim_dist), debug=debug)
 
         return control
+
+
+    

@@ -1260,6 +1260,12 @@ class InRadiusRegionTest(Criterion):
 
         return new_status
 
+    def terminate(self, new_status):
+        if (self.test_status == "RUNNING") or (self.test_status == "INIT"):
+            self.test_status = "FAILURE"
+        super(InRadiusRegionTest, self).terminate(new_status)
+        
+
 
 class InRouteTest(Criterion):
 

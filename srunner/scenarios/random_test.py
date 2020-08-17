@@ -25,7 +25,7 @@ from srunner.scenariomanager.scenarioatomics.atomic_behaviors import (ActorTrans
                                                                       ActorSource,
                                                                       ActorSink)
 
-from srunner.scenariomanager.scenarioatomics.atomic_criteria import CollisionTest
+from srunner.scenariomanager.scenarioatomics.atomic_criteria import CollisionTest, ReachedRegionTest, InRadiusRegionTest
 import srunner.scenariomanager.scenarioatomics.atomic_trigger_conditions as conditions
 from srunner.scenariomanager.scenarioatomics.atomic_trigger_conditions import (InTriggerDistanceToVehicle,
                                                                                InTriggerRegion,
@@ -55,22 +55,18 @@ from srunner.scenarios.actor_dict import (ActorDict,
 # return a list of potential scenarios
 def list_potential_scenarios():
     potential_scenario_names = ["DynamicObstaclesAhead", "CutIn", "VehiclesAhead"]#, "StationaryObstaclesAhead" , "CutIn", "ChangeLane"]
-    # scenario_description = {
-    #                         'name': scenario_name,
-    #                         'other_actors': other_vehicles,
-    #                         'trigger_position': waypoint,
-    #                         }
     return potential_scenario_names
 
 def list_potential_triggers(map):
     potential_triggers = []
 
     # first trigger
-    trigger_location = carla.Location(7.1, -210, 3)
+    trigger_location = carla.Location(10, -210, 3)
     trigger_waypoint = map.get_waypoint(trigger_location)
     potential_triggers.append(trigger_waypoint)
 
-    trigger_location = carla.Location(20, -260, 3)
+    # trigger_location = carla.Location(20, -260, 3)
+    trigger_location = carla.Location(17.7, -251, 3)
     trigger_waypoint = map.get_waypoint(trigger_location)
     potential_triggers.append(trigger_waypoint)
 
@@ -80,18 +76,26 @@ def list_potential_triggers(map):
     # trigger_waypoint = map.get_waypoint(trigger_location)
     # potential_triggers.append(trigger_waypoint)
 
-    trigger_location = carla.Location(49, -320, 3)
 
-    # trigger_location = carla.Location(40, -315, 3)
+    trigger_location = carla.Location(32, -289, 3)
     trigger_waypoint = map.get_waypoint(trigger_location)
     potential_triggers.append(trigger_waypoint)
     # third trigger
-    trigger_location = carla.Location(65, -339, 3)
-    # trigger_location = carla.Location(62, -336, 3)
+    # trigger_location = carla.Location(65, -339, 3)
+    trigger_location = carla.Location(48, -312, 3)
+    trigger_waypoint = map.get_waypoint(trigger_location)
+    potential_triggers.append(trigger_waypoint)
+
+    trigger_location = carla.Location(72, -336, 3)
+    trigger_waypoint = map.get_waypoint(trigger_location)
+    potential_triggers.append(trigger_waypoint)
+
+    trigger_location = carla.Location(117, -358, 3)
     trigger_waypoint = map.get_waypoint(trigger_location)
     potential_triggers.append(trigger_waypoint)
     # 4th trigger
-    trigger_location = carla.Location(109, -360, 3)
+    trigger_location = carla.Location(131, -362, 3)
+
     # trigger_location = carla.Location(109, -360, 3)
     trigger_waypoint = map.get_waypoint(trigger_location)
     potential_triggers.append(trigger_waypoint)
@@ -282,6 +286,8 @@ class RandomTest(BasicScenario):
         root = py_trees.composites.Parallel("Running random scenario",
                                             policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE)
         
+        root.add_child(StandStill(self.ego_vehicles[0], "scenario ended", 3.0))
+        root.add_child(InTriggerDistanceToLocation(self.ego_vehicles[0], carla.Location(200, -250, 0), 10))
         for (scenario, actor_dict) in self.scenario_list:
             if scenario == "VehiclesAhead":
                 wait_for_trigger = InTriggerDistanceToLocation(self.ego_vehicles[0], actor_dict.trigger.transform.location, 10)
@@ -340,7 +346,7 @@ class RandomTest(BasicScenario):
 
                 # accelerate
                 accelerate = AccelerateToCatchUp(self.other_actors[actor_dict.index], self.ego_vehicles[0], throttle_value=1,
-                                         delta_velocity=actor_dict.delta_speed, trigger_distance=10, max_distance=500)
+                                         delta_velocity=actor_dict.delta_speed, trigger_distance=5, max_distance=500)
                 
                 sequence.add_child(accelerate)
 
@@ -348,14 +354,14 @@ class RandomTest(BasicScenario):
                 # lane_change = None
                 if actor_dict.direction == 'left':
                     lane_change = LaneChange(
-                        self.other_actors[actor_dict.index], speed=10, direction='right', distance_same_lane=5, distance_other_lane=300)
+                        self.other_actors[actor_dict.index], speed=60, direction='right', distance_same_lane=5, distance_other_lane=300)
                     sequence.add_child(lane_change)    
                 else:
                     lane_change = LaneChange(
-                        self.other_actors[actor_dict.index], speed=10, direction='left', distance_same_lane=5, distance_other_lane=300)
+                        self.other_actors[actor_dict.index], speed=60, direction='left', distance_same_lane=5, distance_other_lane=300)
                     sequence.add_child(lane_change)
 
-                endcondition = DriveDistance(self.other_actors[actor_dict.index], 200)
+                endcondition = DriveDistance(self.other_actors[actor_dict.index], 150)
                 parallel = py_trees.composites.Sequence("Behavior", policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE)
                 parallel.add_child(sequence)
                 parallel.add_child(endcondition)
@@ -428,9 +434,11 @@ class RandomTest(BasicScenario):
         """
         criteria = []
 
-        collision_criterion = CollisionTest(self.ego_vehicles[0])
-
+        collision_criterion = CollisionTest(self.ego_vehicles[0], optional=False, name="CheckCollisions", terminate_on_failure=True)
+        target_reached = InRadiusRegionTest(self.ego_vehicles[0], 200, -249, 30)
+        # distance_driven = DrivenDistanceTest(self.ego_vehicles[0], 2000, )
         criteria.append(collision_criterion)
+        criteria.append(target_reached)
 
         return criteria
 
