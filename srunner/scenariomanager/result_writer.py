@@ -41,25 +41,48 @@ class ResultOutputProvider(object):
         self._end_time = time.strftime('%Y-%m-%d %H:%M:%S',
                                        time.localtime(self._data.end_system_time))
 
+        # logging.basicConfig(filename='test_log.txt',
+        #                     filemode='a',
+        #                     format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+        #                     datefmt='%H:%M:%S',
+        #                     level=logging.INFO)        
+        # hdlr = logging.FileHandler('test.log')
+        # formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+        # hdlr.setFormatter(formatter)
         self.logger = logging.getLogger("ResultProvider")
         self.logger.setLevel(logging.INFO)
+        # # self.logger.addHandler(hdlr) 
+
         self.logger.propagate = False
 
-    def write(self):
+    def write(self, log_message):
         """
         Public write function
         """
-        if self._stdout:
-            channel = logging.StreamHandler()
-            self.logger.addHandler(channel)
-        if self._filename is not None:
-            filehandle = logging.FileHandler(self._filename)
-            self.logger.addHandler(filehandle)
-        if self._junit is not None:
-            self._write_to_junit()
+        # if self._stdout:
+        #     channel = logging.StreamHandler()
+        #     self.logger.addHandler(channel)
+        # if self._filename is not None:
+        #     filehandle = logging.FileHandler(self._filename)
+        #     self.logger.addHandler(filehandle)
+        # if self._junit is not None:
+        #     self._write_to_junit()
+        filehandle = logging.FileHandler("test.log")
+        self.logger.addHandler(filehandle)
 
         if self._stdout or (self._filename is not None):
+            self.logger.info("\n\n")
+            self.logger.info(log_message)
             self._write_to_logger()
+            self.logger.info("\n")
+            self.logger.info(
+                "<-----  Test Configurations  ----->\n"
+            )
+            # self.logger.info(log_message)
+            # self.logger.info(
+            #     "   Test Number |   Scenario One    |   Scenario Two    |   Scenario Three  |   Num. of Reconfigs   "
+            # )
+
             self.logger.handlers = []
 
     def _write_to_logger(self):
@@ -67,21 +90,24 @@ class ResultOutputProvider(object):
         Writing to logger automatically writes to all handlers in parallel,
         i.e. stdout and file are both captured with this function
         """
-        self.logger.info("\n")
-        self.logger.info("Scenario: %s --- Result: %s",
-                         self._data.scenario_tree.name, self._result)
-        self.logger.info("Start time: %s", (self._start_time))
-        self.logger.info("End time: %s", (self._end_time))
-        self.logger.info("Duration: System Time %5.2fs --- Game Time %5.2fs",
-                         self._data.scenario_duration_system,
+        self.logger.info("Test Result: %s", self._result)
+        # self.logger.info("Scenario: %s --- Result: %s",
+        #                  self._data.scenario_tree.name, self._result)
+        # self.logger.info("Start time: %s", (self._start_time))
+        # self.logger.info("End time: %s", (self._end_time))
+        self.logger.info("Duration: %5.2fs",
                          self._data.scenario_duration_game)
+        # self.logger.info("Duration: System Time %5.2fs --- Game Time %5.2fs",
+        #                  self._data.scenario_duration_system,
+        #                  self._data.scenario_duration_game)
         for ego_vehicle in self._data.ego_vehicles:
-            self.logger.info("Ego vehicle:  %s", ego_vehicle)
+            self.logger.info("\nEgo vehicle:  %s", ego_vehicle)
 
         actor_string = ""
         for actor in self._data.other_actors:
-            actor_string += "{}; ".format(actor)
+            actor_string += "{}; ".format(actor.type_id)
         self.logger.info("Other actors: %s", actor_string)
+        self.logger.info("\n##########################################################")
         self.logger.info("\n")
         # pylint: disable=line-too-long
         self.logger.info(
@@ -109,15 +135,16 @@ class ResultOutputProvider(object):
 
         # Handle timeout separately
         # pylint: disable=line-too-long
-        self.logger.info("%33s | %30s | %11s | %12.2f | %12.2f ",
+        self.logger.info(" %33s | %30s | %11s | %12.2f | %12.2f ",
                          "",
-                         "Duration",
+                         "Duration ",
                          "SUCCESS" if self._data.scenario_duration_game < self._data.scenario.timeout else "FAILURE",
                          self._data.scenario_duration_game,
                          self._data.scenario.timeout)
         # pylint: enable=line-too-long
 
-        self.logger.info("\n")
+        
+        # self.logger.info("\n")
 
     def _write_to_junit(self):
         """

@@ -243,7 +243,7 @@ class ScenarioRunner(object):
         # sync state
         CarlaDataProvider.get_world().tick()
 
-    def _analyze_scenario(self, config):
+    def _analyze_scenario(self, config, log_message):
         """
         Provide feedback about success/failure of a scenario
         """
@@ -259,7 +259,7 @@ class ScenarioRunner(object):
         if self._args.file:
             filename = config_name + current_time + ".txt"
 
-        if not self.manager.analyze_scenario(self._args.output, filename, junit_filename):
+        if not self.manager.analyze_scenario(self._args.output, filename, junit_filename, log_message):
             print("All scenario tests were passed successfully!")
         else:
             print("Not all scenario tests were successful")
@@ -315,7 +315,7 @@ class ScenarioRunner(object):
 
         return True
 
-    def _load_and_run_scenario(self, config):
+    def _load_and_run_scenario(self, config, test_num, rep):
         """
         Load and run the scenario given by config
         """
@@ -355,6 +355,7 @@ class ScenarioRunner(object):
                 scenario = scenario_class(self.world,
                                           self.ego_vehicles,
                                           config,
+                                          self._args.test_run, # add test run parameter
                                           self._args.randomize,
                                           self._args.debug)
                 
@@ -391,7 +392,10 @@ class ScenarioRunner(object):
             self.manager.run_scenario()
 
             # Provide outputs if required
-            self._analyze_scenario(config)
+            log_message = ("##########################################################\n" + 
+                           "\nTest Number: {}\nRep: {}\n".format(test_num, rep))
+                        #    + "\n##########################################################")
+            self._analyze_scenario(config, log_message)#"Test Number: {}. Rep: {}".format(test_num, rep))
 
             # Remove all actors
             scenario.remove_all_actors()
@@ -406,7 +410,7 @@ class ScenarioRunner(object):
         self._cleanup()
         return result
 
-    def _run_scenarios(self):
+    def _run_scenarios(self, test, rep):
         """
         Run conventional scenarios (e.g. implemented using the Python API of ScenarioRunner)
         """
@@ -428,7 +432,7 @@ class ScenarioRunner(object):
 
             # Execute each configuration
             for config in scenario_configurations:
-                result = self._load_and_run_scenario(config)
+                result = self._load_and_run_scenario(config, test, rep)
 
             self._cleanup()
         return result
@@ -456,7 +460,7 @@ class ScenarioRunner(object):
             for _ in range(repetitions):
 
                 config = RouteScenarioConfiguration(route_description, scenario_file)
-                result = self._load_and_run_scenario(config)
+                result = self._load_and_run_scenario(config, -1, -1)
 
                 self._cleanup()
         return result
@@ -473,11 +477,11 @@ class ScenarioRunner(object):
             return False
 
         config = OpenScenarioConfiguration(self._args.openscenario, self.client)
-        result = self._load_and_run_scenario(config)
+        result = self._load_and_run_scenario(config, -1, -1)
         self._cleanup()
         return result
 
-    def run(self):
+    def run(self, test, rep):
         """
         Run all scenarios according to provided commandline args
         """
@@ -487,7 +491,7 @@ class ScenarioRunner(object):
         elif self._args.route:
             result = self._run_route()
         else:
-            result = self._run_scenarios()
+            result = self._run_scenarios(test, rep)
 
         print("No more scenarios .... Exiting")
         return result
@@ -533,6 +537,11 @@ def main():
     parser.add_argument('--timeout', default="10.0",
                         help='Set the CARLA client timeout value in seconds')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + str(VERSION))
+    
+    # input test run number
+    parser.add_argument('-t', '--test_run', default="-1")
+    parser.add_argument('--rep', default="-1")
+
     arguments = parser.parse_args()
     # pylint: enable=line-too-long
 
@@ -563,7 +572,7 @@ def main():
     result = True
     try:
         scenario_runner = ScenarioRunner(arguments)
-        result = scenario_runner.run()
+        result = scenario_runner.run(arguments.test_run, arguments.rep)
 
     finally:
         if scenario_runner is not None:

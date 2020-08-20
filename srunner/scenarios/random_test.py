@@ -52,80 +52,69 @@ from srunner.scenarios.actor_dict import (ActorDict,
                                         StationaryObstaclesDict,
                                         CutInDict)
 
+from tabulate import tabulate
+
 # return a list of potential scenarios
 def list_potential_scenarios():
-    potential_scenario_names = ["DynamicObstaclesAhead", "CutIn", "VehiclesAhead"]#, "StationaryObstaclesAhead" , "CutIn", "ChangeLane"]
+    # possible scenarios:                 0                     1           2
+    potential_scenario_names = ["DynamicObstaclesAhead", "VehiclesAhead", "CutIn"]#, "StationaryObstaclesAhead" , "CutIn", "ChangeLane"]
     return potential_scenario_names
 
 def list_potential_triggers(map):
     potential_triggers = []
 
-    # first trigger
-    trigger_location = carla.Location(10, -210, 3)
-    trigger_waypoint = map.get_waypoint(trigger_location)
-    potential_triggers.append(trigger_waypoint)
+    # first trigger: 0
+    # trigger_location = carla.Location(10, -210, 3)
+    # trigger_waypoint = map.get_waypoint(trigger_location)
+    # potential_triggers.append(trigger_waypoint)
 
-    # trigger_location = carla.Location(20, -260, 3)
+    # first trigger: 0
     trigger_location = carla.Location(17.7, -251, 3)
     trigger_waypoint = map.get_waypoint(trigger_location)
     potential_triggers.append(trigger_waypoint)
 
-    # second trigger
-    # trigger_location = carla.Location(28, -280, 3)
-    # # trigger_location = carla.Location(20, -280, 3)
-    # trigger_waypoint = map.get_waypoint(trigger_location)
-    # potential_triggers.append(trigger_waypoint)
-
-
+    # second trigger: 1
     trigger_location = carla.Location(32, -289, 3)
     trigger_waypoint = map.get_waypoint(trigger_location)
     potential_triggers.append(trigger_waypoint)
-    # third trigger
-    # trigger_location = carla.Location(65, -339, 3)
+    
+    # third trigger: 2
     trigger_location = carla.Location(48, -312, 3)
     trigger_waypoint = map.get_waypoint(trigger_location)
     potential_triggers.append(trigger_waypoint)
 
+    # fourth trigger: 3
     trigger_location = carla.Location(72, -336, 3)
     trigger_waypoint = map.get_waypoint(trigger_location)
     potential_triggers.append(trigger_waypoint)
 
+    # fifth trigger: 4
     trigger_location = carla.Location(117, -358, 3)
     trigger_waypoint = map.get_waypoint(trigger_location)
     potential_triggers.append(trigger_waypoint)
-    # 4th trigger
-    trigger_location = carla.Location(131, -362, 3)
 
-    # trigger_location = carla.Location(109, -360, 3)
+    # sixth trigger: 5
+    trigger_location = carla.Location(131, -362, 3)
     trigger_waypoint = map.get_waypoint(trigger_location)
     potential_triggers.append(trigger_waypoint)
     
-    # Turning Right location (exiting highway)
-    # trigger_location = carla.Location(188, -365, 3)
-    # # trigger_rotation = carla.Rotation(0, 240, 0)
-    # # trigger_transform = carla.Transform(trigger_location, trigger_rotation)
-    # trigger_waypoint = map.get_waypoint(trigger_location)
-    # potential_triggers.append(trigger_waypoint)
-
-    # dynamic obstacles crossing location
-    # 5th trigger
+    # seventh trigger: 6
     trigger_location = carla.Location(203, -341, 3)
     trigger_waypoint = map.get_waypoint(trigger_location)
     potential_triggers.append(trigger_waypoint)
     
-    # trigger_location = carla.Location(200, -298, 3)
-    # trigger_waypoint = map.get_waypoint(trigger_location)
-    # potential_triggers.append(trigger_waypoint)
-
     return potential_triggers
 
 class RandomTest(BasicScenario):
     
-    def __init__(self, world, ego_vehicles, config, randomize=False, debug_mode=False, criteria_enable=True,
+    def __init__(self, world, ego_vehicles, config, test_num, randomize=False, debug_mode=False, criteria_enable=True,
                  timeout=80):
         
         self._map = CarlaDataProvider.get_map()
         self._world = world
+
+        # specify test run number
+        self._test = int(test_num)
 
         # location of the ego vehicle
         self._reference_waypoint = self._map.get_waypoint(config.trigger_points[0].location)
@@ -139,14 +128,37 @@ class RandomTest(BasicScenario):
         self._num_actors = self._num_scenarios #self._num_scenarios
 
         self.scenario_list = []
-        # have a list of scenarios descriptions (scenario name, actor_dict)
-        # actor_dict: trigger_point, transform(offset?), other scenario-specific parameters
+        
+        # return all possible scenarios and trigger points
         potential_scenarios = list_potential_scenarios()
         potential_triggers = list_potential_triggers(self._map)
 
-        self.selected_scenarios = self.select_scenarios(potential_scenarios, self._num_scenarios)
-        self.selected_triggers = random.sample(potential_triggers, self._num_scenarios)
+        if self._test >= 0 and self._test <= 4:
+            print("\nrunning scenario {}\n".format(str(self._test)))
+            self.selected_scenarios = self.select_scenarios(potential_scenarios, self._test)
+            self.selected_triggers = self.select_triggers(potential_triggers, self._test)
+        else:
+            print("\nrandomly generating scenarios\n")
+            # randomly select specified number of scenarios and their trigger points
+            self.selected_scenarios = self.select_scenarios_random(potential_scenarios, self._num_scenarios)
+            self.selected_triggers = random.sample(potential_triggers, self._num_scenarios)            
         
+        f = open('test.log', 'a')
+        # log test configurations
+        row = []
+        for ind in range(len(self.selected_scenarios)):
+            scenario = self.selected_scenarios[ind]
+            trigger = self.selected_triggers[ind]
+            row.append(scenario + " at: \n" + str(trigger.transform.location))
+        
+        log_headers = [
+            "Scenario One", "Scenario Two", "Scenario Three"
+        ]
+        f.write(tabulate([row], headers=log_headers))
+        f.write("\n-----------------------------------------------------------------------------------------------------------------")
+        f.write("\n")
+        f.close()
+
         for i in range(len(self.selected_scenarios)):
             trigger = self.selected_triggers[i]
             scenario = self.selected_scenarios[i]
@@ -155,18 +167,14 @@ class RandomTest(BasicScenario):
             print("\n")
             if scenario == "VehiclesAhead":
                 actor_dict = LeadVehicleDict(trigger, self._map)
-            elif scenario == "StationaryObstaclesAhead":
-                actor_dict = StationaryObstaclesDict(trigger, self._map)
+            # elif scenario == "StationaryObstaclesAhead":
+            #     actor_dict = StationaryObstaclesDict(trigger, self._map)
             elif scenario == "CutIn":
                 actor_dict = CutInDict(trigger, self._map)
             elif scenario == "DynamicObstaclesAhead":
-                # off_highway_1 = self._map.get_waypoint(carla.Location(200, -298, 3))
-                off_highway_1 = self._map.get_waypoint(carla.Location(203, -341, 3))
-                if (trigger != off_highway_1):
-                    # and trigger != off_highway_2):
-                    # trigger = random.choice([off_highway_1, off_highway_2])
-                    trigger = off_highway_1
-                    print("changed trigger")
+                # off_highway_1 = self._map.get_waypoint(carla.Location(203, -341, 3))
+                # if (trigger != off_highway_1):
+                #     trigger = off_highway_1
                 actor_dict = DynamicObstaclesDict(trigger, self._map)
             else:
                 print("actor dict class not implemented")
@@ -190,13 +198,37 @@ class RandomTest(BasicScenario):
                                         debug_mode,
                                         criteria_enable=criteria_enable)
 
-    def select_scenarios(self, potential_scenarios, num_scenarios):
+    def select_scenarios_random(self, potential_scenarios, num_scenarios):
         random_scenarios = []
         while num_scenarios > 0:
             scenario_ind = random.randint(0, len(potential_scenarios)-1)
             random_scenarios.append(potential_scenarios[scenario_ind])
             num_scenarios -= 1
         return random_scenarios
+
+    def select_scenarios(self, potential_scenarios, test_num):
+        scenario_set = [[1, 1, 0],
+                        [1, 1, 0],
+                        [2, 1, 1],
+                        [2, 0, 0],
+                        [1, 1, 1]]
+        selected_ind = scenario_set[test_num]
+        selected = []
+        for i in selected_ind:
+            selected.append(potential_scenarios[i])
+        return selected
+
+    def select_triggers(self, potential_triggers, test_num):
+        trigger_set = [ [0, 1, 6],
+                        [2, 3, 6],
+                        [1, 4, 5],
+                        [2, 3, 6],
+                        [1, 3, 6] ]
+        selected_ind = trigger_set[test_num]
+        selected = []
+        for i in selected_ind:
+            selected.append(potential_triggers[i])
+        return selected
 
     # def check_valid_location(self, actor_locations, new_location):
     #     dist_threshold = 50
@@ -215,7 +247,7 @@ class RandomTest(BasicScenario):
         vehicle.set_simulate_physics(enabled=False)
         index = len(self.other_actors)
         actor_dict.index = index
-        print("index of vehiclesAhead actor: " + str(index))
+        # print("index of vehiclesAhead actor: " + str(index))
         self.other_actors.append(vehicle)
     
     def _initialize_stationary_obstacles_ahead(self, actor_dict):
@@ -223,7 +255,7 @@ class RandomTest(BasicScenario):
         static.set_simulate_physics(True)
         index = len(self.other_actors)
         actor_dict.index = index
-        print("index of Stationary obstacle actor: " + str(index))
+        # print("index of Stationary obstacle actor: " + str(index))
         self.other_actors.append(static)
 
     def _initialize_cut_in(self, actor_dict):
@@ -231,7 +263,7 @@ class RandomTest(BasicScenario):
         vehicle.set_simulate_physics(enabled=False)
         index = len(self.other_actors)
         actor_dict.index = index
-        print("index of Cut In actor: " + str(index))
+        # print("index of Cut In actor: " + str(index))
         self.other_actors.append(vehicle)
 
     def _initialize_dynamic_obstacles_ahead(self, actor_dict):
@@ -242,7 +274,7 @@ class RandomTest(BasicScenario):
                 walker = CarlaActorPool.request_new_actor('walker.*', actor_dict.start_transform)
                 walker.set_transform(actor_dict.start_transform)
                 walker.set_simulate_physics(enabled=False)
-                print("walker spawned at" + str(actor_dict.start_transform))
+                # print("walker spawned at" + str(actor_dict.start_transform))
                 break
 
             except RuntimeError as r:
@@ -252,7 +284,7 @@ class RandomTest(BasicScenario):
         walker.set_transform(default)
         index = len(self.other_actors)
         actor_dict.index = index
-        print("index of dynamic crossing actor: " + str(index))
+        # print("index of dynamic crossing actor: " + str(index))
         self.other_actors.append(walker)
 
     def _initialize_actors(self, config):
@@ -312,7 +344,7 @@ class RandomTest(BasicScenario):
                 #                             policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE)
                 # stop_condition.add_child(keep_driving)
                 # stop_condition.add_child(drive_success)
-                if random.randint(0,1) != -1:
+                if random.randint(0,1):
                     sequence.add_child(drive)
                     sequence.add_child(stop)
                     sequence.add_child(accelerate)
