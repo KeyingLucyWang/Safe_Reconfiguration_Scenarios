@@ -66,6 +66,16 @@ class LeadVehicleDict(ActorDict):
                 waypoint.transform.rotation)
         return start_transform
 
+    def _print_config(self):
+        string = [
+            "VehiclesAhead",
+            "Start_Transform: "+str(self.start_transform.location),
+            "Trigger: "+str(self.trigger.transform.location),
+            "Start_Dist: {}".format(self.start_dist),
+            "Speed: {}".format(self.speed),
+        ]
+        return string
+
 class StationaryObstaclesDict(ActorDict):
     def __init__(self, trigger, world_map):
         super().__init__(trigger, world_map)
@@ -106,7 +116,7 @@ class StationaryObstaclesDict(ActorDict):
 class DynamicObstaclesDict(ActorDict):
     def __init__(self, trigger, world_map):
         super().__init__(trigger, world_map)
-        self.time_to_reach = random.randint(3, 8)
+        self.time_to_reach = random.randint(4, 8)
         self.num_lane_changes = 1
         self.offset = {"orientation": 270, "position": 90, "z": 0.6, "k": 1.0}
         self.start_transform, self.orientation_yaw = self._calculate_transform()
@@ -162,14 +172,28 @@ class DynamicObstaclesDict(ActorDict):
 
         return carla.Transform(location, carla.Rotation(yaw=orientation_yaw)), orientation_yaw
 
+    def _print_config(self):
+        string = [
+            "DynamicObstaclesAhead",
+            "Start_Transform: "+str(self.start_transform.location),
+            "Trigger: "+str(self.trigger.transform.location),
+            "Start_Dist: {}".format(self.start_dist),
+            "Speed: {}".format(self.speed),
+            "Time_To_Reach: {}".format(self.time_to_reach)
+        ]
+        return string
+
+
 class CutInDict(ActorDict):
     def __init__(self, trigger, world_map):
         super().__init__(trigger, world_map)
         self.name = "CutIn"
         self.speed = 20
         self.delta_speed = random.randint(20, 30) # 10 randomize later
-        self.trigger_distance = 30 # 30 randomize later
+        self.start_dist = 10
+        self.trigger_distance = 5 # randomize later
         self.spawn_point = self.trigger
+        self.lane_change_speed = 10
         
         # self.trigger, _ = get_waypoint_in_distance(self.spawn_point, 60)
         if self.trigger.get_left_lane() == None and self.trigger.get_right_lane == None:
@@ -193,7 +217,7 @@ class CutInDict(ActorDict):
             self.spawn_point = self.spawn_point.get_right_lane()
         
         spawn_location = self.spawn_point.transform.location
-        ahead_location, _ = get_location_in_distance_from_wp(self.trigger, 10, False)
+        ahead_location, _ = get_location_in_distance_from_wp(self.trigger, self.start_dist, False)
         self.trigger = self.map.get_waypoint(ahead_location)
 
         # change_x = ahead_location.x - trigger_location.x
@@ -205,3 +229,17 @@ class CutInDict(ActorDict):
         print("cut in start location: " + str(waypoint))
 
         return waypoint.transform
+
+    def _print_config(self):
+        string = [
+            "CutIn",
+            "Start_Transform: "+str(self.start_transform.location),
+            "Trigger: "+str(self.trigger.transform.location),
+            "Start_Dist: {}".format(self.start_dist),
+            "Speed: {}".format(self.speed),
+            "Delta Speed: {}".format(self.delta_speed),
+            "Trigger_Dist: {}".format(self.trigger_distance),
+            "Direction: {}".format(self.direction)
+        ]
+        return string
+    

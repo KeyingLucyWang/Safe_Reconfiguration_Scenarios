@@ -355,7 +355,8 @@ class ScenarioRunner(object):
                 scenario = scenario_class(self.world,
                                           self.ego_vehicles,
                                           config,
-                                          self._args.test_run, # add test run parameter
+                                          test_num, # add test run parameter
+                                          rep,
                                           self._args.randomize,
                                           self._args.debug)
                 
@@ -392,7 +393,8 @@ class ScenarioRunner(object):
             self.manager.run_scenario()
 
             # Provide outputs if required
-            log_message = ("##########################################################\n" + 
+                            
+            log_message = ("**********************************************************\n" + 
                            "\nTest Number: {}\nRep: {}\n".format(test_num, rep))
                         #    + "\n##########################################################")
             self._analyze_scenario(config, log_message)#"Test Number: {}. Rep: {}".format(test_num, rep))

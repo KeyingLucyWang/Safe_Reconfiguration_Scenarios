@@ -71,13 +71,13 @@ class ResultOutputProvider(object):
         self.logger.addHandler(filehandle)
 
         if self._stdout or (self._filename is not None):
-            self.logger.info("\n\n")
-            self.logger.info(log_message)
+            # self.logger.info("\n\n")
+            # self.logger.info(log_message)
             self._write_to_logger()
             self.logger.info("\n")
-            self.logger.info(
-                "<-----  Test Configurations  ----->\n"
-            )
+            # self.logger.info(
+            #     "<-----  Test Configurations  ----->\n"
+            # )
             # self.logger.info(log_message)
             # self.logger.info(
             #     "   Test Number |   Scenario One    |   Scenario Two    |   Scenario Three  |   Num. of Reconfigs   "
@@ -90,6 +90,10 @@ class ResultOutputProvider(object):
         Writing to logger automatically writes to all handlers in parallel,
         i.e. stdout and file are both captured with this function
         """
+        # f = open("test.log", "a")
+        # f.write("\n##########################################################")
+        # f.write("\nTotal Number of Mode Transitions: {}".format(num_mode_switch))
+        self.logger.info("\n##########################################################\n")
         self.logger.info("Test Result: %s", self._result)
         # self.logger.info("Scenario: %s --- Result: %s",
         #                  self._data.scenario_tree.name, self._result)
@@ -107,7 +111,7 @@ class ResultOutputProvider(object):
         for actor in self._data.other_actors:
             actor_string += "{}; ".format(actor.type_id)
         self.logger.info("Other actors: %s", actor_string)
-        self.logger.info("\n##########################################################")
+        self.logger.info("\n**********************************************************")
         self.logger.info("\n")
         # pylint: disable=line-too-long
         self.logger.info(

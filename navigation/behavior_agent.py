@@ -74,6 +74,8 @@ class BehaviorAgent(Agent):
         elif behavior == 'aggressive':
             self.behavior = Aggressive()
 
+        self._num_mode_switch = 0
+
 
     def get_reaction_time(self):
         # cautious agent

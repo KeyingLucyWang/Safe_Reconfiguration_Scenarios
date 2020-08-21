@@ -64,11 +64,6 @@ def list_potential_triggers(map):
     potential_triggers = []
 
     # first trigger: 0
-    # trigger_location = carla.Location(10, -210, 3)
-    # trigger_waypoint = map.get_waypoint(trigger_location)
-    # potential_triggers.append(trigger_waypoint)
-
-    # first trigger: 0
     trigger_location = carla.Location(17.7, -251, 3)
     trigger_waypoint = map.get_waypoint(trigger_location)
     potential_triggers.append(trigger_waypoint)
@@ -107,7 +102,7 @@ def list_potential_triggers(map):
 
 class RandomTest(BasicScenario):
     
-    def __init__(self, world, ego_vehicles, config, test_num, randomize=False, debug_mode=False, criteria_enable=True,
+    def __init__(self, world, ego_vehicles, config, test_num, rep, randomize=False, debug_mode=False, criteria_enable=True,
                  timeout=80):
         
         self._map = CarlaDataProvider.get_map()
@@ -115,6 +110,7 @@ class RandomTest(BasicScenario):
 
         # specify test run number
         self._test = int(test_num)
+        self._rep = int(rep)
 
         # location of the ego vehicle
         self._reference_waypoint = self._map.get_waypoint(config.trigger_points[0].location)
@@ -125,7 +121,7 @@ class RandomTest(BasicScenario):
         # Timeout of scenario in seconds
 
         self._num_scenarios = 3 #random.randint(1, 5)
-        self._num_actors = self._num_scenarios #self._num_scenarios
+        self._num_actors = self._num_scenarios 
 
         self.scenario_list = []
         
@@ -133,55 +129,42 @@ class RandomTest(BasicScenario):
         potential_scenarios = list_potential_scenarios()
         potential_triggers = list_potential_triggers(self._map)
 
-        if self._test >= 0 and self._test <= 4:
-            print("\nrunning scenario {}\n".format(str(self._test)))
-            self.selected_scenarios = self.select_scenarios(potential_scenarios, self._test)
-            self.selected_triggers = self.select_triggers(potential_triggers, self._test)
-        else:
+        # if self._test >= 0 and self._test <= 4:
+        # if self._rep != 0:
+        #     print("\nrunning repeated scenarios\n")#{}\n".format(str(self._test)))
+        #     self.selected_scenarios = self.select_scenarios(potential_scenarios, self._test)
+        #     self.selected_triggers = self.select_triggers(potential_triggers, self._test)
+        # else:
+        if self._rep == 0:
             print("\nrandomly generating scenarios\n")
             # randomly select specified number of scenarios and their trigger points
             self.selected_scenarios = self.select_scenarios_random(potential_scenarios, self._num_scenarios)
             self.selected_triggers = random.sample(potential_triggers, self._num_scenarios)            
-        
-        f = open('test.log', 'a')
-        # log test configurations
-        row = []
-        for ind in range(len(self.selected_scenarios)):
-            scenario = self.selected_scenarios[ind]
-            trigger = self.selected_triggers[ind]
-            row.append(scenario + " at: \n" + str(trigger.transform.location))
-        
-        log_headers = [
-            "Scenario One", "Scenario Two", "Scenario Three"
-        ]
-        f.write(tabulate([row], headers=log_headers))
-        f.write("\n-----------------------------------------------------------------------------------------------------------------")
-        f.write("\n")
-        f.close()
 
-        for i in range(len(self.selected_scenarios)):
-            trigger = self.selected_triggers[i]
-            scenario = self.selected_scenarios[i]
-            print(scenario + " | ")
-            print(str(trigger) + " | ")
-            print("\n")
-            if scenario == "VehiclesAhead":
-                actor_dict = LeadVehicleDict(trigger, self._map)
-            # elif scenario == "StationaryObstaclesAhead":
-            #     actor_dict = StationaryObstaclesDict(trigger, self._map)
-            elif scenario == "CutIn":
-                actor_dict = CutInDict(trigger, self._map)
-            elif scenario == "DynamicObstaclesAhead":
-                # off_highway_1 = self._map.get_waypoint(carla.Location(203, -341, 3))
-                # if (trigger != off_highway_1):
-                #     trigger = off_highway_1
-                actor_dict = DynamicObstaclesDict(trigger, self._map)
-            else:
-                print("actor dict class not implemented")
-                exit(1)
 
-            if not actor_dict.failed:
-                self.scenario_list.append((scenario, actor_dict))
+            for i in range(len(self.selected_scenarios)):
+                trigger = self.selected_triggers[i]
+                scenario = self.selected_scenarios[i]
+                print(scenario + " | ")
+                print(str(trigger) + " | ")
+                print("\n")
+                if scenario == "VehiclesAhead":
+                    actor_dict = LeadVehicleDict(trigger, self._map)
+                # elif scenario == "StationaryObstaclesAhead":
+                #     actor_dict = StationaryObstaclesDict(trigger, self._map)
+                elif scenario == "CutIn":
+                    actor_dict = CutInDict(trigger, self._map)
+                elif scenario == "DynamicObstaclesAhead":
+                    off_highway_1 = self._map.get_waypoint(carla.Location(203, -341, 3))
+                    if (trigger != off_highway_1):
+                        trigger = off_highway_1
+                    actor_dict = DynamicObstaclesDict(trigger, self._map)
+                else:
+                    print("actor dict class not implemented")
+                    exit(1)
+
+                if not actor_dict.failed:
+                    self.scenario_list.append((scenario, actor_dict))
         # for trigger in self.selected_triggers:
         #     print(str(trigger) + " | ")
         #     print("\n")
@@ -190,6 +173,75 @@ class RandomTest(BasicScenario):
 
         # if randomize:
         #     self._first_vehicle_location = random.randint(20, 150)
+            data = ""
+            for ind in range(len(self.scenario_list)):
+                (scenario, actor_dict) = self.scenario_list[ind]
+                # scenario = self.selected_scenarios[ind]
+                # trigger = self.selected_triggers[ind]
+                if scenario == "VehiclesAhead":
+                    data += "{},VehiclesAhead,{},{},{},{},{},{},{},".format(ind, 
+                                                                        actor_dict.start_transform.location,
+                                                                        actor_dict.trigger.transform.location,
+                                                                        actor_dict.start_dist,
+                                                                        actor_dict.speed,
+                                                                        "",
+                                                                        "",
+                                                                        "")
+                elif scenario == "DynamicObstaclesAhead":
+                    data += "{},DynamicObstaclesAhead,{},{},{},{},{},{},{},".format(ind, 
+                                                                        actor_dict.start_transform.location,
+                                                                        actor_dict.trigger.transform.location,
+                                                                        actor_dict.start_dist,
+                                                                        actor_dict.speed,
+                                                                        actor_dict.time_to_reach,
+                                                                        "",
+                                                                        "")
+                else: #CutIn
+                    data += "{},CutIn,{},{},{},{},{},{},{},".format(ind, 
+                                                                    actor_dict.start_transform.location,
+                                                                    actor_dict.trigger.transform.location,
+                                                                    actor_dict.start_dist,
+                                                                    actor_dict.speed,
+                                                                    actor_dict.delta_speed,
+                                                                    actor_dict.trigger_distance,
+                                                                    actor_dict.direction)
+            data += "\n"
+            # f = open('test.txt', 'a')
+            # f.write(data)
+            f = open('test.config.txt', 'w')
+            f.write(data)
+            f.close()
+
+        else: # retrieve test config from test_config.txt
+            f = open('test_config.txt', 'r')
+            config = f.read()
+            f.close()
+            #PARSE CONFIG HERE
+
+        f = open('test.log', 'a')
+        # log test configurations
+        # row = []
+        # for ind in range(len(self.selected_scenarios)):
+        #     scenario = self.selected_scenarios[ind]
+        #     trigger = self.selected_triggers[ind]
+        #     row.append(scenario + " at: \n" + str(trigger.transform.location))
+        
+        # scenario_headers = [
+        #     "Scenario One", "Scenario Two", "Scenario Three"
+        # ]
+        f.write("\n\n\n\n##########################################################\n" 
+                + "\nTest Number: {}\nRep: {}\n\n".format(test_num, rep)
+                + "##########################################################\n")
+
+        # f.write(tabulate([row], headers=scenario_headers))
+        # f.write("\n-----------------------------------------------------------------------------------------------------------------------------------------")
+        # f.write("\n<-----  Test Configurations  ----->")
+        for (scenario, actor_dict) in self.scenario_list:
+            log_header = [scenario]
+            row = actor_dict._print_config()
+            f.write(tabulate([row], headers=log_header))
+        f.write("\n")
+        f.close()
 
         super(RandomTest, self).__init__("RandomTest",
                                         ego_vehicles,
@@ -378,7 +430,7 @@ class RandomTest(BasicScenario):
 
                 # accelerate
                 accelerate = AccelerateToCatchUp(self.other_actors[actor_dict.index], self.ego_vehicles[0], throttle_value=1,
-                                         delta_velocity=actor_dict.delta_speed, trigger_distance=5, max_distance=100)
+                                         delta_velocity=actor_dict.delta_speed, trigger_distance=actor_dict.trigger_distance, max_distance=100)
                 
                 sequence.add_child(accelerate)
 
@@ -386,11 +438,11 @@ class RandomTest(BasicScenario):
                 # lane_change = None
                 if actor_dict.direction == 'left':
                     lane_change = LaneChange(
-                        self.other_actors[actor_dict.index], speed=10, direction='right', distance_same_lane=50, distance_other_lane=10)
+                        self.other_actors[actor_dict.index], speed=actor_dict.lane_change_speed, direction='right', distance_same_lane=50, distance_other_lane=10)
                     sequence.add_child(lane_change)    
                 else:
                     lane_change = LaneChange(
-                        self.other_actors[actor_dict.index], speed=10, direction='left', distance_same_lane=50, distance_other_lane=10)
+                        self.other_actors[actor_dict.index], speed=actor_dict.lane_change_speed, direction='left', distance_same_lane=50, distance_other_lane=10)
                     sequence.add_child(lane_change)
                 sequence.add_child(WaypointFollower(self.other_actors[actor_dict.index], target_speed=20, avoid_collision=True))
                 endcondition = DriveDistance(self.other_actors[actor_dict.index], 150)
