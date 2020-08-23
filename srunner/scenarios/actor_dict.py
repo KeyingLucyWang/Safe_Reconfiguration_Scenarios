@@ -39,15 +39,25 @@ class ActorDict(object):
         return default_transform
 
 class LeadVehicleDict(ActorDict):
-    def __init__(self, trigger, world_map):
+    def __init__(self, trigger, world_map, actor_dict):
         super().__init__(trigger, world_map)
+
+        if actor_dict:
+            self.start_dist = actor_dict["start_dist"]
+            self.trigger = actor_dict["trigger"]
+            self.speed = actor_dict["speed"]
+            self.stop = actor_dict["stop"]
+        else:
+            self.stop = random.choice([False, True])
+
         self.start_transform = self._calculate_transform()
         self.default_transform = self._calculate_default(self.start_transform)
         self.name = "VehiclesAhead"
 
+
     def _calculate_transform(self):
         waypoint, _ = get_waypoint_in_distance(self.trigger, self.start_dist)
-        lane = random.randint(0, 2)
+        # lane = random.randint(0, 2)
         # if lane == 0:
         #     pass
         # elif lane == 1:
@@ -114,9 +124,17 @@ class StationaryObstaclesDict(ActorDict):
         return start_transform
 
 class DynamicObstaclesDict(ActorDict):
-    def __init__(self, trigger, world_map):
+    def __init__(self, trigger, world_map, actor_dict):
         super().__init__(trigger, world_map)
-        self.time_to_reach = random.randint(4, 8)
+
+        if actor_dict:
+            self.start_dist = actor_dict["start_dist"]
+            self.trigger = actor_dict["trigger"]
+            self.speed = actor_dict["speed"]
+            self.time_to_reach = actor_dict["time_to_reach"]
+        else:
+            self.time_to_reach = random.randint(4, 8)
+
         self.num_lane_changes = 1
         self.offset = {"orientation": 270, "position": 90, "z": 0.6, "k": 1.0}
         self.start_transform, self.orientation_yaw = self._calculate_transform()
@@ -185,26 +203,37 @@ class DynamicObstaclesDict(ActorDict):
 
 
 class CutInDict(ActorDict):
-    def __init__(self, trigger, world_map):
+    def __init__(self, trigger, world_map, actor_dict):
         super().__init__(trigger, world_map)
+        
         self.name = "CutIn"
-        self.speed = 20
-        self.delta_speed = random.randint(20, 30) # 10 randomize later
-        self.start_dist = 10
-        self.trigger_distance = 5 # randomize later
+
+        if actor_dict:
+            self.start_dist = actor_dict["start_dist"]
+            self.trigger = actor_dict["trigger"]
+            self.speed = actor_dict["speed"]
+            self.delta_speed = actor_dict["delta_speed"]
+            self.trigger_distance = actor_dict["trigger_distance"]
+            self.direction = actor_dict["direction"]
+        else:
+            self.speed = 20
+            self.delta_speed = random.randint(20, 30) # 10 randomize later
+            self.start_dist = 10
+            self.trigger_distance = 5 # randomize later
+        
+            # self.trigger, _ = get_waypoint_in_distance(self.spawn_point, 60)
+            if self.trigger.get_left_lane() == None and self.trigger.get_right_lane == None:
+                print("lane change not possible")
+                self.failed = True
+            elif self.trigger.get_left_lane() == None or self.trigger.get_left_lane().lane_type != carla.LaneType.Driving:
+                self.direction = "right"
+            elif self.trigger.get_right_lane() == None or self.trigger.get_right_lane().lane_type != carla.LaneType.Driving:
+                self.direction = "left"
+            else:
+                self.direction = random.choice(["left, right"])
+
         self.spawn_point = self.trigger
         self.lane_change_speed = 10
-        
-        # self.trigger, _ = get_waypoint_in_distance(self.spawn_point, 60)
-        if self.trigger.get_left_lane() == None and self.trigger.get_right_lane == None:
-            print("lane change not possible")
-            self.failed = True
-        elif self.trigger.get_left_lane() == None or self.trigger.get_left_lane().lane_type != carla.LaneType.Driving:
-            self.direction = "right"
-        elif self.trigger.get_right_lane() == None or self.trigger.get_right_lane().lane_type != carla.LaneType.Driving:
-            self.direction = "left"
-        else:
-            self.direction = random.choice(["left, right"])
 
         self.start_transform = self._calculate_transform()
         self.default_transform = self._calculate_default(self.start_transform)

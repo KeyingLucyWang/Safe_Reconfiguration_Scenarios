@@ -121,7 +121,6 @@ class RandomTest(BasicScenario):
         # Timeout of scenario in seconds
 
         self._num_scenarios = 3 #random.randint(1, 5)
-        self._num_actors = self._num_scenarios 
 
         self.scenario_list = []
         
@@ -149,16 +148,16 @@ class RandomTest(BasicScenario):
                 print(str(trigger) + " | ")
                 print("\n")
                 if scenario == "VehiclesAhead":
-                    actor_dict = LeadVehicleDict(trigger, self._map)
+                    actor_dict = LeadVehicleDict(trigger, self._map, None)
                 # elif scenario == "StationaryObstaclesAhead":
                 #     actor_dict = StationaryObstaclesDict(trigger, self._map)
                 elif scenario == "CutIn":
-                    actor_dict = CutInDict(trigger, self._map)
+                    actor_dict = CutInDict(trigger, self._map, None)
                 elif scenario == "DynamicObstaclesAhead":
                     off_highway_1 = self._map.get_waypoint(carla.Location(203, -341, 3))
                     if (trigger != off_highway_1):
                         trigger = off_highway_1
-                    actor_dict = DynamicObstaclesDict(trigger, self._map)
+                    actor_dict = DynamicObstaclesDict(trigger, self._map, None)
                 else:
                     print("actor dict class not implemented")
                     exit(1)
@@ -178,28 +177,46 @@ class RandomTest(BasicScenario):
                 (scenario, actor_dict) = self.scenario_list[ind]
                 # scenario = self.selected_scenarios[ind]
                 # trigger = self.selected_triggers[ind]
+                x = actor_dict.start_transform.location.x
+                y = actor_dict.start_transform.location.y
+                z = actor_dict.start_transform.location.z
+                transform_str = "{}|{}|{}".format(x, y, z)
+
+                x = actor_dict.trigger.transform.location.x
+                y = actor_dict.trigger.transform.location.y
+                z = actor_dict.trigger.transform.location.z
+                trigger_str = "{}|{}|{}".format(x, y, z)
+
+                        #test.rep.scenario
+                test_info = "{}.{}.{}".format(self._test, self._rep, ind)
                 if scenario == "VehiclesAhead":
-                    data += "{},VehiclesAhead,{},{},{},{},{},{},{},".format(ind, 
-                                                                        actor_dict.start_transform.location,
-                                                                        actor_dict.trigger.transform.location,
+                    data += "{},VehiclesAhead,{},{},{},{},{},{},{},".format(test_info, 
+                                                                        #actor_dict.start_transform.location,
+                                                                        #actor_dict.trigger.transform.location,
+                                                                        transform_str,
+                                                                        trigger_str,
                                                                         actor_dict.start_dist,
                                                                         actor_dict.speed,
-                                                                        "",
+                                                                        actor_dict.stop,
                                                                         "",
                                                                         "")
                 elif scenario == "DynamicObstaclesAhead":
-                    data += "{},DynamicObstaclesAhead,{},{},{},{},{},{},{},".format(ind, 
-                                                                        actor_dict.start_transform.location,
-                                                                        actor_dict.trigger.transform.location,
+                    data += "{},DynamicObstaclesAhead,{},{},{},{},{},{},{},".format(test_info, 
+                                                                        #actor_dict.start_transform.location,
+                                                                        #actor_dict.trigger.transform.location,
+                                                                        transform_str,
+                                                                        trigger_str,
                                                                         actor_dict.start_dist,
                                                                         actor_dict.speed,
                                                                         actor_dict.time_to_reach,
                                                                         "",
                                                                         "")
                 else: #CutIn
-                    data += "{},CutIn,{},{},{},{},{},{},{},".format(ind, 
-                                                                    actor_dict.start_transform.location,
-                                                                    actor_dict.trigger.transform.location,
+                    data += "{},CutIn,{},{},{},{},{},{},{},".format(test_info, 
+                                                                    #actor_dict.start_transform.location,
+                                                                    #actor_dict.trigger.transform.location,
+                                                                    transform_str,
+                                                                    trigger_str,
                                                                     actor_dict.start_dist,
                                                                     actor_dict.speed,
                                                                     actor_dict.delta_speed,
@@ -208,14 +225,98 @@ class RandomTest(BasicScenario):
             data += "\n"
             # f = open('test.txt', 'a')
             # f.write(data)
-            f = open('test.config.txt', 'w')
+            f = open('test_config.txt', 'w')
+            f.write(data)
+            f.close()
+
+            f = open('test_log.txt', 'a')
             f.write(data)
             f.close()
 
         else: # retrieve test config from test_config.txt
             f = open('test_config.txt', 'r')
-            config = f.read()
+            config_info = f.read()
             f.close()
+
+            config_list = config_info.split(",")
+            f = open('test_log.txt', 'a')
+            for i in range(self._num_scenarios):
+                test_info = config_list[0+i*9].split('.')
+                test = test_info[0]
+                rep = int(test_info[1])
+                scenario = test_info[2]
+                rep += 1 # rep += 1
+                test_info[1] = str(rep)
+                test_info_str = ".".join(test_info)
+                config_list[0+i*9] = test_info_str
+            config_info = ",".join(config_list)
+            f.write(config_info)
+            f.close()
+
+            # update scenario config file
+            f = open('test_config.txt', 'w')
+            f.write(config_info)
+            f.close()
+
+            for i in range(self._num_scenarios):
+                scenario_name = config_list[1+i*9]
+                # start_transform = config_list[2]
+                trigger = config_list[3+i*9].split("|") #NEEDS TO BE PARSED --> x.y.z
+                x = float(trigger[0])
+                y = float(trigger[1])
+                z = float(trigger[2])
+                trigger_waypoint = self._map.get_waypoint(carla.Location(x, y, z))
+                
+                print(scenario_name + " | ")
+                print(str(trigger_waypoint) + " | ")
+                print("\n")
+
+                start_dist = int(config_list[4+i*9])
+                speed = int(config_list[5+i*9])
+
+                if scenario_name == "VehiclesAhead":
+                    parsed_dict = dict()
+                    parsed_dict["start_dist"] = start_dist
+                    parsed_dict["trigger"] = trigger_waypoint
+                    parsed_dict["speed"] = speed
+                    if config_list[6+i*9] == "True":
+                        parsed_dict["stop"] = True
+                    else:
+                        parsed_dict["stop"] = False
+
+                    actor_dict = LeadVehicleDict(None, self._map, parsed_dict)
+                    
+                elif scenario_name == "DynamicObstaclesAhead":
+                    time_to_reach = config_list[6+i*9]
+                    parsed_dict = dict()
+                    parsed_dict["start_dist"] = start_dist
+                    parsed_dict["trigger"] = trigger_waypoint
+                    parsed_dict["speed"] = speed
+                    parsed_dict["time_to_reach"] = int(time_to_reach)
+
+                    actor_dict = DynamicObstaclesDict(None, self._map, parsed_dict)
+
+                elif scenario_name == "CutIn":
+                    delta_speed = int(config_list[6+i*9])
+                    trigger_dist = int(config_list[7+i*9])
+                    direction = config_list[8+i*9]
+
+                    parsed_dict = dict()
+                    parsed_dict["start_dist"] = start_dist
+                    parsed_dict["trigger"] = trigger_waypoint
+                    parsed_dict["speed"] = speed
+                    parsed_dict["delta_speed"] = delta_speed
+                    parsed_dict["trigger_distance"] = trigger_dist
+                    parsed_dict["direction"] = direction
+
+                    actor_dict = CutInDict(None, self._map, parsed_dict)
+
+                else:
+                    print("ERROR: Invalid scenario name")
+                    raise r
+
+                self.scenario_list.append((scenario_name, actor_dict))
+
             #PARSE CONFIG HERE
 
         f = open('test.log', 'a')
@@ -239,7 +340,7 @@ class RandomTest(BasicScenario):
         for (scenario, actor_dict) in self.scenario_list:
             log_header = [scenario]
             row = actor_dict._print_config()
-            f.write(tabulate([row], headers=log_header))
+            f.write(tabulate([row]))
         f.write("\n")
         f.close()
 
@@ -396,7 +497,7 @@ class RandomTest(BasicScenario):
                 #                             policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE)
                 # stop_condition.add_child(keep_driving)
                 # stop_condition.add_child(drive_success)
-                if random.randint(0,1):
+                if actor_dict.stop:
                     sequence.add_child(drive)
                     sequence.add_child(stop)
                     sequence.add_child(accelerate)
