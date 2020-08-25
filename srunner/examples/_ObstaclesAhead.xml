@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<scenarios>
+    <scenario name="ObstaclesAhead_1" type="ObstaclesAhead" town="Town03">
+        <ego_vehicle x="232.36" y="113.29" z="2.46" yaw="90" model="vehicle.lincoln.mkz2017" />
+    </scenario>
+</scenarios>
