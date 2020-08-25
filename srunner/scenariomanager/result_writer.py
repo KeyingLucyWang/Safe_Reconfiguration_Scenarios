@@ -119,7 +119,21 @@ class ResultOutputProvider(object):
         self.logger.info(
             "-----------------------------------------------------------------------------------------------------------------")
         # pylint: enable=line-too-long
+        
+        collision = self._data.scenario.get_criteria()[0]
+        collision_res = "FAILURE" if collision.test_status == "RUNNING" else collision.test_status
 
+        destination = self._data.scenario.get_criteria()[1]
+        destination_res = "SUCCESS" if destination.test_status == "RUNNING" else destination.test_status\
+
+        timeout_res = "SUCCESS" if self._data.scenario_duration_game < self._data.scenario.timeout else "FAILURE"
+        
+        test_res = "{},{},{},{},".format(self._result, collision_res, destination_res, timeout_res)
+
+        f = open("test_log.txt", 'a')
+        f.write(test_res)
+        f.close()
+        
         for criterion in self._data.scenario.get_criteria():
             name_string = criterion.name
             if criterion.optional:

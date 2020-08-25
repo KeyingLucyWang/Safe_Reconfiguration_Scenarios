@@ -222,6 +222,13 @@ class RandomTest(BasicScenario):
                                                                     actor_dict.delta_speed,
                                                                     actor_dict.trigger_distance,
                                                                     actor_dict.direction)
+            
+            # 20% chance that there is extreme weather
+            extreme_weather = (random.randint(0, 5) < 1)
+            if extreme_weather:
+                data += "True,"
+            else:
+                data += "False,"
             data += "\n"
             # f = open('test.txt', 'a')
             # f.write(data)
