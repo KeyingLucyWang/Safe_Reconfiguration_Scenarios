@@ -3,12 +3,9 @@
 # This work is licensed under the terms of the MIT license.
 # For a copy, see <https://opensource.org/licenses/MIT>.
 
-#pylint: disable=protected-access
-
 """ This module implements an agent that roams around a track following random
 waypoints and avoiding other vehicles. The agent also responds to traffic lights,
 traffic signs, and has different possible configurations. """
-
 import random
 import numpy as np
 import carla
@@ -42,7 +39,6 @@ class BehaviorAgent(Agent):
             :param ignore_traffic_light: boolean to ignore any traffic light
             :param behavior: type of agent to apply
         """
-
         super(BehaviorAgent, self).__init__(vehicle)
         self.vehicle = vehicle
         self.ignore_traffic_light = ignore_traffic_light
@@ -266,7 +262,7 @@ class BehaviorAgent(Agent):
                     self.set_destination(left_wpt.transform.location,
                                          self.end_waypoint.transform.location, clean=True)
 
-    def collision_and_car_avoid_manager(self, location, waypoint):
+    def collision_and_car_avoid_manager(self, location, waypoint, extreme_weather):
         """
         This module is in charge of warning in case of a collision
         and managing possible overtaking or tailgating chances.
@@ -283,9 +279,9 @@ class BehaviorAgent(Agent):
         vehicle_list = [v for v in vehicle_list if dist(v) < 45 and v.id != self.vehicle.id]
 
         print("hi")
-        if self.extreme_weather:
+        if extreme_weather:
             print("extreme weather")
-        if (self.extreme_weather and self.behavior.overtake_counter == 0 
+        if (extreme_weather and self.behavior.overtake_counter == 0 
             and self.behavior.tailgate_counter == 0 and random.randint(0, 2) < 1):
             print("Extreme weather")
             vehicle_list = []
@@ -319,7 +315,7 @@ class BehaviorAgent(Agent):
 
         return vehicle_state, vehicle, distance
 
-    def pedestrian_avoid_manager(self, location, waypoint):
+    def pedestrian_avoid_manager(self, location, waypoint, extreme_weather):
         """
         This module is in charge of warning in case of a collision
         with any pedestrian.
@@ -335,7 +331,7 @@ class BehaviorAgent(Agent):
         def dist(w): return w.get_location().distance(waypoint.transform.location)
         walker_list = [w for w in walker_list if dist(w) < 10]
 
-        if (self.extreme_weather and self.behavior.overtake_counter == 0 
+        if (extreme_weather and self.behavior.overtake_counter == 0 
             and self.behavior.tailgate_counter == 0 and random.randint(0, 5) < 1):
             walker_list = []
 
@@ -361,18 +357,18 @@ class BehaviorAgent(Agent):
             :param debug: boolean for debugging
             :return control: carla.VehicleControl
         """
-
+        extreme_weather = debug
         vehicle_speed = get_speed(vehicle)
         delta_v = max(1, (self.speed - vehicle_speed) / 3.6)
         ttc = distance / delta_v if delta_v != 0 else distance / np.nextafter(0., 1.)
 
         # Under safety time distance, slow down.
-        if self.behavior.safety_time > ttc > 0.0:
+        if self.behavior.safety_time > ttc > 0.0 and not extreme_weather:
             control = self._local_planner.run_step(
                 target_speed=min(positive(vehicle_speed - self.behavior.speed_decrease),
                                  min(self.behavior.max_speed, self.speed_limit - self.behavior.speed_lim_dist)), debug=debug)
         # Actual safety distance area, try to follow the speed of the vehicle in front.
-        elif 2 * self.behavior.safety_time > ttc >= self.behavior.safety_time:
+        elif 2 * self.behavior.safety_time > ttc >= self.behavior.safety_time and not extreme_weather:
             control = self._local_planner.run_step(
                 target_speed=min(max(self.min_speed, vehicle_speed),
                                  min(self.behavior.max_speed, self.speed_limit - self.behavior.speed_lim_dist)), debug=debug)
@@ -383,13 +379,14 @@ class BehaviorAgent(Agent):
 
         return control
 
-    def run_step(self, debug=False):
+    def run_step(self, extreme_weather=False, debug=False):
         """
         Execute one step of navigation.
 
             :param debug: boolean for debugging
             :return control: carla.VehicleControl
         """
+        print("running one step")
         control = None
         if self.behavior.tailgate_counter > 0:
             self.behavior.tailgate_counter -= 1
@@ -407,7 +404,7 @@ class BehaviorAgent(Agent):
         # 2.1: Pedestrian avoidancd behaviors
 
         walker_state, walker, w_distance = self.pedestrian_avoid_manager(
-            ego_vehicle_loc, ego_vehicle_wp)
+            ego_vehicle_loc, ego_vehicle_wp, extreme_weather)
 
         if walker_state:
             # Distance is computed from the center of the two cars,
@@ -422,7 +419,7 @@ class BehaviorAgent(Agent):
 
         # 2.2: Car following behaviors
         vehicle_state, vehicle, distance = self.collision_and_car_avoid_manager(
-            ego_vehicle_loc, ego_vehicle_wp)
+            ego_vehicle_loc, ego_vehicle_wp, extreme_weather)
 
         if vehicle_state:
             # Distance is computed from the center of the two cars,
@@ -435,7 +432,7 @@ class BehaviorAgent(Agent):
             if distance < self.behavior.braking_distance:
                 return self.emergency_stop()
             else:
-                control = self.car_following_manager(vehicle, distance)
+                control = self.car_following_manager(vehicle, distance, extreme_weather)
 
         # 4: Intersection behavior
 

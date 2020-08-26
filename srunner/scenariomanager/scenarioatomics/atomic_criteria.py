@@ -281,6 +281,158 @@ class AverageVelocityTest(Criterion):
         super(AverageVelocityTest, self).terminate(new_status)
 
 
+class OtherCollisionTest(Criterion):
+
+    """
+    This class contains an atomic test for collisions.
+
+    Important parameters:
+    - actor: CARLA actor to be used for this test
+    - terminate_on_failure [optional]: If True, the complete scenario will terminate upon failure of this test
+    - optional [optional]: If True, the result is not considered for an overall pass/fail result
+    """
+
+    MIN_AREA_OF_COLLISION = 3       # If closer than this distance, the collision is ignored
+    MAX_AREA_OF_COLLISION = 5       # If further than this distance, the area if forgotten
+
+    def __init__(self, actor, optional=False, name="CheckCollisions", terminate_on_failure=False):
+        """
+        Construction with sensor setup
+        """
+        self._actor = actor
+        self.last_walker_id = None
+        super(OtherCollisionTest, self).__init__(name, actor, 0, None, optional, terminate_on_failure)
+        self.logger.debug("%s.__init__()" % (self.__class__.__name__))
+
+        world = self.actor.get_world()
+        blueprint = world.get_blueprint_library().find('sensor.other.collision')
+        self._collision_sensor = world.spawn_actor(blueprint, carla.Transform(), attach_to=self.actor)
+        self._collision_sensor.listen(lambda event: self._count_collisions(weakref.ref(self), event))
+        self.registered_collisions = []
+        self.last_id = None
+        self.actual_value = 0
+
+    def update(self):
+        """
+        Check collision count
+        """
+        new_status = py_trees.common.Status.RUNNING
+
+        if self._terminate_on_failure and (self.test_status == "FAILURE"):
+            new_status = py_trees.common.Status.FAILURE
+
+        actor_location = CarlaDataProvider.get_location(self._actor)
+        new_registered_collisions = []
+
+        # Loops through all the previous registered collisions
+        for collision_location in self.registered_collisions:
+
+            # Get the distance to the collision point
+            distance_vector = actor_location - collision_location
+            distance = math.sqrt(math.pow(distance_vector.x, 2) + math.pow(distance_vector.y, 2))
+
+            # If far away from a previous collision, forget it
+            if distance <= self.MAX_AREA_OF_COLLISION:
+                new_registered_collisions.append(collision_location)
+
+        self.registered_collisions = new_registered_collisions
+
+        self.logger.debug("%s.update()[%s->%s]" % (self.__class__.__name__, self.status, new_status))
+
+        return new_status
+
+    def terminate(self, new_status):
+        """
+        Cleanup sensor
+        """
+        if self._collision_sensor is not None:
+            self._collision_sensor.destroy()
+        self._collision_sensor = None
+
+        # Blackboard variable
+        blackv = py_trees.blackboard.Blackboard()
+        _ = blackv.set("Collision", self.actual_value)
+        super(OtherCollisionTest, self).terminate(new_status)
+
+    @staticmethod
+    def _count_collisions(weak_self, event):
+        """
+        Callback to update collision count
+        """
+        self = weak_self()
+        if not self:
+            return
+
+        registered = False
+        actor_type = None
+
+        actor_location = CarlaDataProvider.get_location(self.actor)
+        fence_loc = carla.Location(199, -350, 0)
+
+        # 'fence' in event.other_actor.type_id.lower() 
+        if 'fence' in event.other_actor.type_id.lower() and (math.sqrt((actor_location.x - fence_loc.x)**2 + (actor_location.y - fence_loc.y)**2) < 10):
+            print('collision with pole while turning')
+        if ('vehicle' in event.other_actor.type_id):
+            print("other vehicle collision")
+            self.test_status = "FAILURE"
+
+            # Ignore the current one if it is the same id as before
+            if self.last_id == event.other_actor.id:
+                registered = True
+            else:
+                # Loops through all the previous registered collisions
+                for collision_location in self.registered_collisions:
+
+                    # Get the distance to the collision point
+                    distance_vector = actor_location - collision_location
+                    distance = math.sqrt(math.pow(distance_vector.x, 2) + math.pow(distance_vector.y, 2))
+
+                    # Ignore the current one if close to a previous one
+                    if distance <= self.MIN_AREA_OF_COLLISION:
+                        registered = True
+                        break
+
+            # Register it if needed
+            if not registered:
+                self.actual_value += 1
+                self.last_id = event.other_actor.id
+
+                
+                # if ('static' in event.other_actor.type_id or 'traffic' in event.other_actor.type_id) \
+                #         and 'sidewalk' not in event.other_actor.type_id:
+                #     actor_type = TrafficEventType.COLLISION_STATIC
+                if ('fence' in event.other_actor.type_id.lower()):
+                    actor_type = TrafficEventType.COLLISION_STATIC
+                    print("collision with fence while turning")
+
+
+                elif 'vehicle' in event.other_actor.type_id:
+                    actor_type = TrafficEventType.COLLISION_VEHICLE
+                    print("collision with other vehicle")
+
+                # elif 'walker' in event.other_actor.type_id:
+                #     actor_type = TrafficEventType.COLLISION_PEDESTRIAN
+
+                collision_event = TrafficEvent(event_type=actor_type)
+                collision_event.set_dict({
+                    'type': event.other_actor.type_id,
+                    'id': event.other_actor.id,
+                    'x': actor_location.x,
+                    'y': actor_location.y,
+                    'z': actor_location.z})
+                collision_event.set_message(
+                    "Agent collided against object with type={} and id={} at (x={}, y={}, z={})".format(
+                        event.other_actor.type_id,
+                        event.other_actor.id,
+                        round(actor_location.x, 3),
+                        round(actor_location.y, 3),
+                        round(actor_location.z, 3)))
+
+                self.registered_collisions.append(actor_location)
+                self.list_traffic_events.append(collision_event)
+
+
+
 class CollisionTest(Criterion):
 
     """
@@ -365,59 +517,59 @@ class CollisionTest(Criterion):
 
         registered = False
         actor_type = None
-
-        self.test_status = "FAILURE"
-
         actor_location = CarlaDataProvider.get_location(self.actor)
 
-        # Ignore the current one if it is the same id as before
-        if self.last_id == event.other_actor.id:
-            registered = True
-        else:
-            # Loops through all the previous registered collisions
-            for collision_location in self.registered_collisions:
+        if 'vehicle' in event.other_actor.type_id or 'walker' in event.other_actor.type_id:
+            self.test_status = "FAILURE"
 
-                # Get the distance to the collision point
-                distance_vector = actor_location - collision_location
-                distance = math.sqrt(math.pow(distance_vector.x, 2) + math.pow(distance_vector.y, 2))
+            # Ignore the current one if it is the same id as before
+            if self.last_id == event.other_actor.id:
+                registered = True
+            else:
+                # Loops through all the previous registered collisions
+                for collision_location in self.registered_collisions:
 
-                # Ignore the current one if close to a previous one
-                if distance <= self.MIN_AREA_OF_COLLISION:
-                    registered = True
-                    break
+                    # Get the distance to the collision point
+                    distance_vector = actor_location - collision_location
+                    distance = math.sqrt(math.pow(distance_vector.x, 2) + math.pow(distance_vector.y, 2))
 
-        # Register it if needed
-        if not registered:
-            self.actual_value += 1
-            self.last_id = event.other_actor.id
+                    # Ignore the current one if close to a previous one
+                    if distance <= self.MIN_AREA_OF_COLLISION:
+                        registered = True
+                        break
 
-            if ('static' in event.other_actor.type_id or 'traffic' in event.other_actor.type_id) \
-                    and 'sidewalk' not in event.other_actor.type_id:
-                actor_type = TrafficEventType.COLLISION_STATIC
+            # Register it if needed
+            if not registered:
+                self.actual_value += 1
+                self.last_id = event.other_actor.id
 
-            elif 'vehicle' in event.other_actor.type_id:
-                actor_type = TrafficEventType.COLLISION_VEHICLE
+                if ('static' in event.other_actor.type_id or 'traffic' in event.other_actor.type_id) \
+                        and 'sidewalk' not in event.other_actor.type_id:
+                    actor_type = TrafficEventType.COLLISION_STATIC
 
-            elif 'walker' in event.other_actor.type_id:
-                actor_type = TrafficEventType.COLLISION_PEDESTRIAN
+                elif 'vehicle' in event.other_actor.type_id:
+                    actor_type = TrafficEventType.COLLISION_VEHICLE
 
-            collision_event = TrafficEvent(event_type=actor_type)
-            collision_event.set_dict({
-                'type': event.other_actor.type_id,
-                'id': event.other_actor.id,
-                'x': actor_location.x,
-                'y': actor_location.y,
-                'z': actor_location.z})
-            collision_event.set_message(
-                "Agent collided against object with type={} and id={} at (x={}, y={}, z={})".format(
-                    event.other_actor.type_id,
-                    event.other_actor.id,
-                    round(actor_location.x, 3),
-                    round(actor_location.y, 3),
-                    round(actor_location.z, 3)))
+                elif 'walker' in event.other_actor.type_id:
+                    actor_type = TrafficEventType.COLLISION_PEDESTRIAN
 
-            self.registered_collisions.append(actor_location)
-            self.list_traffic_events.append(collision_event)
+                collision_event = TrafficEvent(event_type=actor_type)
+                collision_event.set_dict({
+                    'type': event.other_actor.type_id,
+                    'id': event.other_actor.id,
+                    'x': actor_location.x,
+                    'y': actor_location.y,
+                    'z': actor_location.z})
+                collision_event.set_message(
+                    "Agent collided against object with type={} and id={} at (x={}, y={}, z={})".format(
+                        event.other_actor.type_id,
+                        event.other_actor.id,
+                        round(actor_location.x, 3),
+                        round(actor_location.y, 3),
+                        round(actor_location.z, 3)))
+
+                self.registered_collisions.append(actor_location)
+                self.list_traffic_events.append(collision_event)
 
 
 class ActorSpeedAboveThresholdTest(Criterion):

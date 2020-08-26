@@ -170,9 +170,16 @@ class World(object):
         self.player.get_world().set_weather(preset[0])
 
     def tick(self, clock):
-        if len(self.world.get_actors().filter(self.vehicle_name)) < 1:
+        count = 0
+        while len(self.world.get_actors().filter(self.vehicle_name)) < 1:
             print("Scenario ended -- Terminating")
-            return False
+            time.sleep(1)
+            count += 1
+            if count > 3:
+                return False
+        # if len(self.world.get_actors().filter(self.vehicle_name)) < 1:
+        #     print("Scenario ended -- Terminating")
+        #     return False
 
         self.hud.tick(self, self.mapname, clock)
         return True
@@ -626,8 +633,7 @@ def game_loop(args):
                 dist = math.sqrt((trigger_loc.x - world.player.get_location().x)**2 + (trigger_loc.y - world.player.get_location().y)**2)
                 if dist < 10:
                     world.world.set_weather(rainy_weather)
-                    print("set agent weather to extreme")
-                    agent._extreme_weather = True
+                    agent.extreme_weather = True
             
             if not world.world.wait_for_tick(10.0):
                 continue

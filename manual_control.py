@@ -463,6 +463,8 @@ class CollisionSensor(object):
             return
         actor_type = get_actor_display_name(event.other_actor)
         self._hud.notification('Collision with %r' % actor_type)
+        print("collision with {}".format(event.other_actor.actor.type_id))
+        
         impulse = event.normal_impulse
         intensity = math.sqrt(impulse.x**2 + impulse.y**2 + impulse.z**2)
         self._history.append((event.frame_number, intensity))

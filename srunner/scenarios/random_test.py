@@ -25,7 +25,7 @@ from srunner.scenariomanager.scenarioatomics.atomic_behaviors import (ActorTrans
                                                                       ActorSource,
                                                                       ActorSink)
 
-from srunner.scenariomanager.scenarioatomics.atomic_criteria import CollisionTest, ReachedRegionTest, InRadiusRegionTest
+from srunner.scenariomanager.scenarioatomics.atomic_criteria import OtherCollisionTest, CollisionTest, ReachedRegionTest, InRadiusRegionTest
 import srunner.scenariomanager.scenarioatomics.atomic_trigger_conditions as conditions
 from srunner.scenariomanager.scenarioatomics.atomic_trigger_conditions import (InTriggerDistanceToVehicle,
                                                                                InTriggerRegion,
@@ -226,7 +226,7 @@ class RandomTest(BasicScenario):
             
             # 20% chance that there is extreme weather
             # extreme_weather = (random.randint(0, 5) < 1)
-            extreme_weather = True
+            extreme_weather = False
             if extreme_weather:
                 data += "True,"
             else:
@@ -422,7 +422,7 @@ class RandomTest(BasicScenario):
     #         new_location = random.randint(10, 100)
     #     return new_location
     def _initialize_vehicles_ahead(self, actor_dict):
-        vehicle = CarlaActorPool.request_new_actor('vehicle.nissan.patrol', actor_dict.default_transform)
+        vehicle = CarlaActorPool.request_new_actor('vehicle.nissan.patrol', actor_dict.start_transform)#default_transform)
         vehicle.set_simulate_physics(enabled=False)
         index = len(self.other_actors)
         actor_dict.index = index
@@ -438,7 +438,7 @@ class RandomTest(BasicScenario):
         self.other_actors.append(static)
 
     def _initialize_cut_in(self, actor_dict):
-        vehicle = CarlaActorPool.request_new_actor('vehicle.nissan.patrol', actor_dict.default_transform)
+        vehicle = CarlaActorPool.request_new_actor('vehicle.nissan.patrol', actor_dict.start_transform)#default_transform)
         vehicle.set_simulate_physics(enabled=False)
         index = len(self.other_actors)
         actor_dict.index = index
@@ -651,9 +651,9 @@ class RandomTest(BasicScenario):
         collision_criterion = CollisionTest(self.ego_vehicles[0], optional=False, name="CheckCollisions", terminate_on_failure=True)
         target_reached = InRadiusRegionTest(self.ego_vehicles[0], 200, -249, 30)
 
-        other_collision_one = CollisionTest(self.other_actors[0], optional=True)
-        other_collision_two = CollisionTest(self.other_actors[1], optional=True)
-        other_collision_three = CollisionTest(self.other_actors[2], optional=True)
+        other_collision_one = OtherCollisionTest(self.other_actors[0], optional=True, terminate_on_failure=True)
+        other_collision_two = OtherCollisionTest(self.other_actors[1], optional=True, terminate_on_failure=True)
+        other_collision_three = OtherCollisionTest(self.other_actors[2], optional=True, terminate_on_failure=True)
         # distance_driven = DrivenDistanceTest(self.ego_vehicles[0], 2000, )
         criteria.append(collision_criterion)
         criteria.append(target_reached)

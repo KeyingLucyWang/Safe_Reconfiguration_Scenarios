@@ -1,5 +1,6 @@
 import os
 import argparse
+import time
 from argparse import RawTextHelpFormatter
 
 # def main():
@@ -10,7 +11,7 @@ description = ("Scenario Runner Wrapper for Testing")
 
 parser = argparse.ArgumentParser(description=description,
                                     formatter_class=RawTextHelpFormatter)
-parser.add_argument('--num_agents', default="1")
+parser.add_argument('--num_agents', default="4")
 parser.add_argument('--num_reps', default="1")
 parser.add_argument('--num_tests', default="1")
 
@@ -24,5 +25,11 @@ for test_num in range(int(args.num_tests)):
     while counter < repetitions:
         os.system("python3 scenario_runner.py --scenario RandomTest_1 --reloadWorld --output -t {} --rep {}".format(test_num, counter))
         counter += 1
+        # with open("test_log.txt", "r") as f:
+        #     last_line = f.readlines()[-1]
+        #     valid = last_line.split(",")[-1]
+        # if valid == "VALID":
+        #     counter += 1
+    
     print("\nTest {} completed\n".format(test_num))
 

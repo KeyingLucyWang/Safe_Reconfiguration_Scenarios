@@ -36,15 +36,16 @@ Use ARROWS or WASD keys for control.
 """
 
 from __future__ import print_function
-from navigation.behavior_agent import BehaviorAgent  # pylint: disable=import-error
-from navigation.roaming_agent import RoamingAgent  # pylint: disable=import-error
-from navigation.basic_agent import BasicAgent
+from navigation.behavior_agent import BehaviorAgent  
+# from navigation.roaming_agent import RoamingAgent  # pylint: disable=import-error
+# from navigation.basic_agent import BasicAgent
 # ==============================================================================
 # -- imports -------------------------------------------------------------------
 # ==============================================================================
 
 
 import carla
+import time
 
 from carla import ColorConverter as cc
 
@@ -147,12 +148,22 @@ class World(object):
         self.player.get_world().set_weather(preset[0])
 
     def tick(self, clock):
+        # count = 0
+        # if len(self.world.get_actors().filter(self.vehicle_name)) < 1:
+        #     print("Scenario ended -- Terminating")
+        #     time.sleep(1)
+        #     count += 1
+        #     if count > 3:
+        #         return False
         if len(self.world.get_actors().filter(self.vehicle_name)) < 1:
             print("Scenario ended -- Terminating")
             return False
 
         self.hud.tick(self, self.mapname, clock)
         return True
+        # if len(self.world.get_actors().filter(self.vehicle_name)) < 1:
+        #     print("Scenario ended -- Terminating")
+        #     return False
 
     def render(self, display):
         self.camera_manager.render(display)
@@ -633,6 +644,7 @@ def game_loop(args):
             agent.get_local_planner().set_speed(speed_limit)
 
             control = agent.run_step()
+            # print("extreme weather {}".format(extreme_weather))
             world.player.apply_control(control)
 
     finally:

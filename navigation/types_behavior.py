@@ -14,7 +14,7 @@ class Cautious(object):
     # braking_distance = 6
     # overtake_counter = -1
     # tailgate_counter = 0
-    max_speed = 30
+    max_speed = 40
     speed_lim_dist = 10
     speed_decrease = 20
     safety_time = 8
@@ -56,7 +56,7 @@ class Aggressive(object):
     # braking_distance = 4
     # overtake_counter = 0
     # tailgate_counter = -1
-    max_speed = 80
+    max_speed = 70
     speed_lim_dist = 1
     speed_decrease = 5
     safety_time = 2

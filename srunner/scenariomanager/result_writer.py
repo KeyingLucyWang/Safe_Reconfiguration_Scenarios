@@ -139,7 +139,8 @@ class ResultOutputProvider(object):
 
         if (one_res == "FAILURE" or two_res == "FAILURE" or three_res == "FAILURE") and collision_res != "FAILURE":
             valid = "INVALID"
-        valid = "VALID"
+        else:
+            valid = "VALID"
 
         test_res = "{},{},{},{},{},{}".format(self._result, collision_res, 
                                             destination_res, timeout_res, 

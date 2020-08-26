@@ -47,6 +47,7 @@ class Agent(object):
             sys.exit(1)
         self._last_traffic_light = None
 
+        self.extreme_weather = False
 
     def get_local_planner(self):
         """Get method for protected member local planner"""
