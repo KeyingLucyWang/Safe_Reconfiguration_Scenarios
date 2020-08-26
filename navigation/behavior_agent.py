@@ -3,6 +3,7 @@
 # This work is licensed under the terms of the MIT license.
 # For a copy, see <https://opensource.org/licenses/MIT>.
 
+#pylint: disable=protected-access
 
 """ This module implements an agent that roams around a track following random
 waypoints and avoiding other vehicles. The agent also responds to traffic lights,
@@ -75,7 +76,10 @@ class BehaviorAgent(Agent):
             self.behavior = Aggressive()
 
         self._num_mode_switch = 0
+        self.extreme_weather = False
 
+    def set_extreme_weather(self):
+        self.extreme_weather = True
 
     def get_reaction_time(self):
         # cautious agent
@@ -273,10 +277,18 @@ class BehaviorAgent(Agent):
             :return vehicle: nearby vehicle
             :return distance: distance to nearby vehicle
         """
-
+        print("hi")
         vehicle_list = self._world.get_actors().filter("*vehicle*")
         def dist(v): return v.get_location().distance(waypoint.transform.location)
         vehicle_list = [v for v in vehicle_list if dist(v) < 45 and v.id != self.vehicle.id]
+
+        print("hi")
+        if self.extreme_weather:
+            print("extreme weather")
+        if (self.extreme_weather and self.behavior.overtake_counter == 0 
+            and self.behavior.tailgate_counter == 0 and random.randint(0, 2) < 1):
+            print("Extreme weather")
+            vehicle_list = []
 
         if self.direction == RoadOption.CHANGELANELEFT:
             vehicle_state, vehicle, distance = self._bh_is_vehicle_hazard(
@@ -322,6 +334,10 @@ class BehaviorAgent(Agent):
         walker_list = self._world.get_actors().filter("*walker.pedestrian*")
         def dist(w): return w.get_location().distance(waypoint.transform.location)
         walker_list = [w for w in walker_list if dist(w) < 10]
+
+        if (self.extreme_weather and self.behavior.overtake_counter == 0 
+            and self.behavior.tailgate_counter == 0 and random.randint(0, 5) < 1):
+            walker_list = []
 
         if self.direction == RoadOption.CHANGELANELEFT:
             walker_state, walker, distance = self._bh_is_vehicle_hazard(waypoint, location, walker_list, max(

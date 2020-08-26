@@ -234,7 +234,7 @@ class KeyboardControl(object):
             or weather_params.precipitation > precipitation_threshold
             or weather_params.precipitation_deposits > precipitation_deposits_threshold
             or weather_params.wind_intensity > wind_intensity_threshold):
-            print("weather condition not safe")
+            # print("weather condition not safe")
             return False
 
         return True
@@ -614,8 +614,7 @@ def game_loop(args):
 
     num_mode_switch = 0
 
-    rainy_weather = carla.WeatherParameters(30, 80, 0, 60, 300, 0) 
-    sunny_weather = carla.WeatherParameters(30, 0, 0, 40, 300, 0)
+    rainy_weather = carla.WeatherParameters(40, 60, 40, 40, 0, 0, 75) 
 
     try:
         client = carla.Client(args.host, args.port)
@@ -645,7 +644,7 @@ def game_loop(args):
 
         clock = pygame.time.Clock()
 
-        world.world.set_weather(sunny_weather)
+        # world.world.set_weather(sunny_weather)
 
         # get weather change info from test_config file
         f = open("test_config.txt","r")
@@ -661,10 +660,11 @@ def game_loop(args):
             (safe_ttc, ttc, vehicle_id) = is_safe_ttc(world, clock.get_fps())
             
             if extreme_weather:
-                trigger_loc = carla.Location(72, -336, 3)
-                dist = math.sqrt((trigger_loc.x - world.player.x)**2 + (trigger_loc.y - world.player.y)**2)
+                trigger_loc = world.map.get_waypoint(carla.Location(48, -312, 0)).transform.location
+                dist = math.sqrt((trigger_loc.x - world.player.get_location().x)**2 + (trigger_loc.y - world.player.get_location().y)**2)
                 if dist < 10:
                     world.world.set_weather(rainy_weather)
+                    agent._extreme_weather = True
 
             if safe_ttc:
                 if controller.parse_events():
@@ -689,9 +689,10 @@ def game_loop(args):
                 print("hazard ahead: " + str(hazard_ahead))
                 same_lane = hazard_waypoint.lane_id == ego_waypoint.lane_id
                 print("same lane: " + str(same_lane))
-                if (same_lane
-                    and speed_non_zero
-                    and hazard_ahead):
+                # if (same_lane
+                #     and speed_non_zero
+                #     and hazard_ahead):
+                if same_lane:
                     safety_control = carla.VehicleControl(throttle=0.0, steer=0.0, brake=1.0, hand_brake=True, reverse=True, manual_gear_shift=True, gear=0)
                     world.player.apply_control(safety_control)
                     hud.notification("Unsafe time-to-collision ahead. Applying safety brake...")

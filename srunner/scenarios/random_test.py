@@ -63,10 +63,10 @@ def list_potential_scenarios():
 def list_potential_triggers(map):
     potential_triggers = []
 
-    # first trigger: 0
-    trigger_location = carla.Location(17.7, -251, 3)
-    trigger_waypoint = map.get_waypoint(trigger_location)
-    potential_triggers.append(trigger_waypoint)
+    # # first trigger: 0
+    # trigger_location = carla.Location(15, -251, 3)
+    # trigger_waypoint = map.get_waypoint(trigger_location)
+    # potential_triggers.append(trigger_waypoint)
 
     # second trigger: 1
     trigger_location = carla.Location(32, -289, 3)
@@ -164,6 +164,7 @@ class RandomTest(BasicScenario):
 
                 if not actor_dict.failed:
                     self.scenario_list.append((scenario, actor_dict))
+                
         # for trigger in self.selected_triggers:
         #     print(str(trigger) + " | ")
         #     print("\n")
@@ -172,7 +173,7 @@ class RandomTest(BasicScenario):
 
         # if randomize:
         #     self._first_vehicle_location = random.randint(20, 150)
-            data = ""
+            data = "\n"
             for ind in range(len(self.scenario_list)):
                 (scenario, actor_dict) = self.scenario_list[ind]
                 # scenario = self.selected_scenarios[ind]
@@ -224,17 +225,27 @@ class RandomTest(BasicScenario):
                                                                     actor_dict.direction)
             
             # 20% chance that there is extreme weather
-            extreme_weather = (random.randint(0, 5) < 1)
+            # extreme_weather = (random.randint(0, 5) < 1)
+            extreme_weather = True
             if extreme_weather:
                 data += "True,"
             else:
                 data += "False,"
-            data += "\n"
+            # data += "\n"
             # f = open('test.txt', 'a')
             # f.write(data)
             f = open('test_config.txt', 'w')
             f.write(data)
             f.close()
+
+            # agent = ""
+            # while not agent:
+            #     f = open('test_agent.txt','r')
+            #     agent = f.read()
+            #     f.close()
+            # f = open('test_agent.txt','w')
+            # f.write("")
+            # f.close()
 
             f = open('test_log.txt', 'a')
             f.write(data)
@@ -246,7 +257,15 @@ class RandomTest(BasicScenario):
             f.close()
 
             config_list = config_info.split(",")
+
+            # agent = ""
+            # while not agent:
+            #     f = open('test_agent.txt','r')
+            #     agent = f.read()
+            #     f.close()
+
             f = open('test_log.txt', 'a')
+
             for i in range(self._num_scenarios):
                 test_info = config_list[0+i*9].split('.')
                 test = test_info[0]
@@ -267,7 +286,7 @@ class RandomTest(BasicScenario):
 
             for i in range(self._num_scenarios):
                 scenario_name = config_list[1+i*9]
-                # start_transform = config_list[2]
+                # start_transform = config_list[3]
                 trigger = config_list[3+i*9].split("|") #NEEDS TO BE PARSED --> x.y.z
                 x = float(trigger[0])
                 y = float(trigger[1])
@@ -320,7 +339,7 @@ class RandomTest(BasicScenario):
 
                 else:
                     print("ERROR: Invalid scenario name")
-                    raise r
+                    raise RuntimeError
 
                 self.scenario_list.append((scenario_name, actor_dict))
 
@@ -439,6 +458,9 @@ class RandomTest(BasicScenario):
 
             except RuntimeError as r:
                 actor_dict._update_transform()
+                if actor_dict._spawn_attempted >= actor_dict._number_of_attempts:
+                    raise r
+
     
         default = actor_dict._calculate_default(actor_dict.start_transform)
         walker.set_transform(default)
@@ -626,11 +648,18 @@ class RandomTest(BasicScenario):
         """
         criteria = []
 
-        collision_criterion = CollisionTest(self.ego_vehicles[0], optional=False, name="CheckCollisions", terminate_on_failure=False)
+        collision_criterion = CollisionTest(self.ego_vehicles[0], optional=False, name="CheckCollisions", terminate_on_failure=True)
         target_reached = InRadiusRegionTest(self.ego_vehicles[0], 200, -249, 30)
+
+        other_collision_one = CollisionTest(self.other_actors[0], optional=True)
+        other_collision_two = CollisionTest(self.other_actors[1], optional=True)
+        other_collision_three = CollisionTest(self.other_actors[2], optional=True)
         # distance_driven = DrivenDistanceTest(self.ego_vehicles[0], 2000, )
         criteria.append(collision_criterion)
         criteria.append(target_reached)
+        criteria.append(other_collision_one)
+        criteria.append(other_collision_two)
+        criteria.append(other_collision_three)
 
         return criteria
 

@@ -124,16 +124,32 @@ class ResultOutputProvider(object):
         collision_res = "FAILURE" if collision.test_status == "RUNNING" else collision.test_status
 
         destination = self._data.scenario.get_criteria()[1]
-        destination_res = "SUCCESS" if destination.test_status == "RUNNING" else destination.test_status\
+        destination_res = "SUCCESS" if destination.test_status == "RUNNING" else destination.test_status
 
         timeout_res = "SUCCESS" if self._data.scenario_duration_game < self._data.scenario.timeout else "FAILURE"
         
-        test_res = "{},{},{},{},".format(self._result, collision_res, destination_res, timeout_res)
+        collision_one = self._data.scenario.get_criteria()[2]
+        one_res = "FAILURE" if collision_one.test_status == "RUNNING" else collision_one.test_status
+
+        collision_two = self._data.scenario.get_criteria()[3]
+        two_res = "FAILURE" if collision_two.test_status == "RUNNING" else collision_two.test_status
+
+        collision_three = self._data.scenario.get_criteria()[4]
+        three_res = "FAILURE" if collision_three.test_status == "RUNNING" else collision_three.test_status
+
+        if (one_res == "FAILURE" or two_res == "FAILURE" or three_res == "FAILURE") and collision_res != "FAILURE":
+            valid = "INVALID"
+        valid = "VALID"
+
+        test_res = "{},{},{},{},{},{}".format(self._result, collision_res, 
+                                            destination_res, timeout_res, 
+                                            self._data.scenario_duration_game,
+                                            valid)
 
         f = open("test_log.txt", 'a')
         f.write(test_res)
         f.close()
-        
+
         for criterion in self._data.scenario.get_criteria():
             name_string = criterion.name
             if criterion.optional:

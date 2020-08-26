@@ -18,35 +18,67 @@ for test in range(tests):
     print("\nRunning autonomous agent\n")
     # run autonomous agent
     while counter < repetitions:
+        # f = open("test_log.txt","a")
+        # f.write("\nautonomous,")
+        # f.close()
+
+        # f = open("test_agent.txt","w") #***APPEND IN RANDOM_TEST
+        # f.write("autonomous,")
+        # f.close()
+
         os.system('python3 autonomous_agent.py')
         counter += 1
         print("autonomous: scenario repetition " + str(counter))
 
-    counter = 0
+    # counter = 0
 
-    print("\nRunning cautious human agent\n")
-    # run cautious human agent
-    while counter < repetitions:
-        os.system('python3 cautious_agent.py')
-        counter += 1
-        print("cautious human: scenario repetition " + str(counter))
+    # print("\nRunning cautious human agent\n")
+    # # run cautious human agent
+    # while counter < repetitions:
+    #     # f = open("test_log.txt","a")
+    #     # f.write("\ncautious,")
+    #     # f.close()
+
+    #     # f = open("test_agent.txt","w") #***APPEND IN RANDOM_TEST
+    #     # f.write("cautious,")
+    #     # f.close()
+
+    #     os.system('python3 cautious_agent.py')
+    #     counter += 1
+    #     print("cautious human: scenario repetition " + str(counter))
 
 
-    counter = 0
+    # counter = 0
 
-    print("\nRunning aggressive human agent\n")
-    # run aggressive human agent
-    while counter < repetitions:
-        os.system('python3 aggressive_agent.py')
-        counter += 1
-        print("aggressive human: scenario repetition " + str(counter))
+    # print("\nRunning aggressive human agent\n")
+    # # run aggressive human agent
+    # while counter < repetitions:
+    #     # f = open("test_log.txt","a")
+    #     # f.write("\naggressive,")
+    #     # f.close()
 
-    counter = 0
+    #     # f = open("test_agent.txt","w") #***APPEND IN RANDOM_TEST
+    #     # f.write("aggressive,")
+    #     # f.close()
 
-    print("\nRunning reconfiguration agent\n")
-    # run reconfiguration agent
-    while counter < repetitions:
-        os.system('python3 reconfiguration_agent.py')
-        counter += 1
-        print("reconfiguration: scenario repetition " + str(counter))
+    #     os.system('python3 aggressive_agent.py')
+    #     counter += 1
+    #     print("aggressive human: scenario repetition " + str(counter))
+
+    # counter = 0
+
+    # print("\nRunning reconfiguration agent\n")
+    # # run reconfiguration agent
+    # while counter < repetitions:
+    #     # f = open("test_log.txt","a")
+    #     # f.write("\nreconfiguration,")
+    #     # f.close()
+
+    #     # f = open("test_agent.txt","w") #***APPEND IN RANDOM_TEST
+    #     # f.write("reconfiguration,")
+    #     # f.close()
+
+    #     os.system('python3 reconfiguration_agent.py')
+    #     counter += 1
+    #     print("reconfiguration: scenario repetition " + str(counter))
 

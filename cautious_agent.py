@@ -574,8 +574,8 @@ def game_loop(args):
     tot_target_reached = 0
     num_min_waypoints = 21
 
-    rainy_weather = carla.WeatherParameters(30, 80, 0, 60, 300, 0) 
-    sunny_weather = carla.WeatherParameters(30, 0, 0, 40, 300, 0)
+    rainy_weather = carla.WeatherParameters(40, 60, 40, 40, 0, 0, 75) 
+
 
     try:
         client = carla.Client(args.host, args.port)
@@ -606,7 +606,7 @@ def game_loop(args):
 
         clock = pygame.time.Clock()
 
-        world.world.set_weather(sunny_weather)
+        # world.world.set_weather(sunny_weather)
 
         # get weather change info from test_config file
         f = open("test_config.txt","r")
@@ -622,10 +622,12 @@ def game_loop(args):
                 return
             
             if extreme_weather:
-                trigger_loc = carla.Location(72, -336, 3)
-                dist = math.sqrt((trigger_loc.x - world.player.x)**2 + (trigger_loc.y - world.player.y)**2)
+                trigger_loc = world.map.get_waypoint(carla.Location(48, -312, 0)).transform.location
+                dist = math.sqrt((trigger_loc.x - world.player.get_location().x)**2 + (trigger_loc.y - world.player.get_location().y)**2)
                 if dist < 10:
                     world.world.set_weather(rainy_weather)
+                    print("set agent weather to extreme")
+                    agent._extreme_weather = True
             
             if not world.world.wait_for_tick(10.0):
                 continue

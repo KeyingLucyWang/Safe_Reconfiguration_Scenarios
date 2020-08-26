@@ -12,8 +12,8 @@ class ActorDict(object):
         self.name = 'Generic'
         self.index = -1 # needs to be updated when added to other_actors list.
 
-        self.start_dist = random.randint(80, 120) #randomize later
-        self.speed = random.randint(10, 50) #randomize later
+        self.start_dist = random.randint(10, 50) #randomize later
+        self.speed = random.randint(15, 50) #randomize later
         self.trigger = trigger #reference waypoint
 
         self.start_transform = None
@@ -50,13 +50,17 @@ class LeadVehicleDict(ActorDict):
         else:
             self.stop = random.choice([False, True])
 
+
         self.start_transform = self._calculate_transform()
+        print("vehicle start location: {}".format(self.start_transform.location))
         self.default_transform = self._calculate_default(self.start_transform)
         self.name = "VehiclesAhead"
 
 
     def _calculate_transform(self):
+        # print("calculating transform for trigger {} at start distance {}".format(self.trigger.transform.location, self.start_dist))
         waypoint, _ = get_waypoint_in_distance(self.trigger, self.start_dist)
+        # print("calculated waypoint location {}".format(waypoint.transform.location))
         # lane = random.randint(0, 2)
         # if lane == 0:
         #     pass
@@ -74,6 +78,7 @@ class LeadVehicleDict(ActorDict):
                 waypoint.transform.location.y,
                 waypoint.transform.location.z + 1),
                 waypoint.transform.rotation)
+        
         return start_transform
 
     def _print_config(self):
@@ -167,8 +172,8 @@ class DynamicObstaclesDict(ActorDict):
         self.start_dist += 0.4
         # print("self.start_dist after update: " + str(self.start_dist))
         self._spawn_attempted += 1
-        if self._spawn_attempted >= self._number_of_attempts:
-            raise r
+        # if self._spawn_attempted >= self._number_of_attempts:
+        #     raise RuntimeError
 
     def _calculate_transform(self):
         waypoint = self._get_sidewalk_waypoint()

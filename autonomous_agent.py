@@ -8,6 +8,8 @@
 
 # Allows controlling a vehicle with a keyboard.
 
+#pylint: disable=protected-access
+
 """
 Welcome to CARLA manual control.
 
@@ -63,33 +65,8 @@ import sys
 try:
     import pygame
     from pygame.locals import KMOD_CTRL
-    # from pygame.locals import KMOD_SHIFT
-    # from pygame.locals import K_0
-    # from pygame.locals import K_9
-    # from pygame.locals import K_BACKQUOTE
-    # from pygame.locals import K_BACKSPACE
-    # from pygame.locals import K_DOWN
     from pygame.locals import K_ESCAPE
-    # from pygame.locals import K_F1
-    # from pygame.locals import K_LEFT
-    # from pygame.locals import K_RIGHT
-    # from pygame.locals import K_SLASH
-    # from pygame.locals import K_SPACE
-    # from pygame.locals import K_TAB
-    # from pygame.locals import K_UP
-    # from pygame.locals import K_a
-    # from pygame.locals import K_c
-    # from pygame.locals import K_d
-    # from pygame.locals import K_h
-    # from pygame.locals import K_p
     from pygame.locals import K_q
-    # from pygame.locals import K_r
-    # from pygame.locals import K_s
-    # from pygame.locals import K_w
-
-    # from pygame.locals import K_t
-    # from pygame.locals import K_y
-    # from pygame.locals import K_b
 
 except ImportError:
     raise RuntimeError('cannot import pygame, make sure pygame package is installed')
@@ -573,9 +550,9 @@ def game_loop(args):
 
     tot_target_reached = 0
     num_min_waypoints = 21
+    rainy_weather = carla.WeatherParameters(40, 60, 40, 40, 0, 0, 75) 
 
-    rainy_weather = carla.WeatherParameters(30, 80, 0, 60, 300, 0) 
-    sunny_weather = carla.WeatherParameters(30, 0, 0, 40, 300, 0)
+    weather_changed = False
 
     try:
         client = carla.Client(args.host, args.port)
@@ -588,7 +565,6 @@ def game_loop(args):
         hud = HUD(args.width, args.height)
         world = World(client.get_world(), hud)
         controller = KeyboardControl(world)
-        
         agent = BehaviorAgent(world.player, behavior=args.behavior, ignore_traffic_light=True)
 
         spawn_points = world.map.get_spawn_points()
@@ -606,7 +582,7 @@ def game_loop(args):
 
         clock = pygame.time.Clock()
 
-        world.world.set_weather(sunny_weather)
+        # world.world.set_weather(sunny_weather)
 
         # get weather change info from test_config file
         f = open("test_config.txt", "r")
@@ -621,12 +597,14 @@ def game_loop(args):
             if controller.parse_events():
                 return
             
-
-            if extreme_weather:
-                trigger_loc = carla.Location(72, -336, 3)
-                dist = math.sqrt((trigger_loc.x - world.player.x)**2 + (trigger_loc.y - world.player.y)**2)
+            
+            if extreme_weather and not weather_changed:
+                trigger_loc = world.map.get_waypoint(carla.Location(48, -312, 0)).transform.location
+                dist = math.sqrt((trigger_loc.x - world.player.get_location().x)**2 + (trigger_loc.y - world.player.get_location().y)**2)
                 if dist < 10:
                     world.world.set_weather(rainy_weather)
+                    agent.extreme_weather = True
+                    weather_changed = True
 
                 
             if not world.world.wait_for_tick(10.0):
