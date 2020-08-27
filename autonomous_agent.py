@@ -37,6 +37,7 @@ Use ARROWS or WASD keys for control.
 
 from __future__ import print_function
 from navigation.behavior_agent import BehaviorAgent  
+# from behavior import BehaviorAgent
 # from navigation.roaming_agent import RoamingAgent  # pylint: disable=import-error
 # from navigation.basic_agent import BasicAgent
 # ==============================================================================
@@ -279,7 +280,7 @@ class HUD(object):
                     break
                 vehicle_type = get_actor_display_name(vehicle, truncate=22)
                 self._info_text.append('% 4dm %s' % (d, vehicle_type))
-        self._notifications.tick(world, clock)
+        # self._notifications.tick(world, clock)
 
     def toggle_info(self):
         self._show_info = not self._show_info
@@ -569,13 +570,13 @@ def game_loop(args):
         client = carla.Client(args.host, args.port)
         client.set_timeout(2.0)
 
-        display = pygame.display.set_mode(
-            (args.width, args.height),
-            pygame.HWSURFACE | pygame.DOUBLEBUF)
+        # display = pygame.display.set_mode(
+        #     (args.width, args.height),
+        #     pygame.HWSURFACE | pygame.DOUBLEBUF)
 
         hud = HUD(args.width, args.height)
         world = World(client.get_world(), hud)
-        controller = KeyboardControl(world)
+        # controller = KeyboardControl(world)
         agent = BehaviorAgent(world.player, behavior=args.behavior, ignore_traffic_light=True)
 
         spawn_points = world.map.get_spawn_points()
@@ -605,9 +606,6 @@ def game_loop(args):
 
         while True:
             clock.tick_busy_loop(60)
-            if controller.parse_events():
-                return
-            
             
             if extreme_weather and not weather_changed:
                 trigger_loc = world.map.get_waypoint(carla.Location(48, -312, 0)).transform.location
@@ -626,8 +624,8 @@ def game_loop(args):
             if (not world.tick(clock)):
                 print("Failure: scenario terminated")
                 break
-            world.render(display)
-            pygame.display.flip()
+            # world.render(display)
+            # pygame.display.flip()
 
             # Set new destination when target has been reached
             if len(agent.get_local_planner().waypoints_queue) < num_min_waypoints and args.loop:

@@ -160,16 +160,16 @@ class World(object):
         self.player.get_world().set_weather(preset[0])
 
     def tick(self, clock):
-        count = 0
-        while len(self.world.get_actors().filter(self.vehicle_name)) < 1:
-            print("Scenario ended -- Terminating")
-            time.sleep(1)
-            count += 1
-            if count > 3:
-                return False
-        # if len(self.world.get_actors().filter(self.vehicle_name)) < 1:
+        # count = 0
+        # while len(self.world.get_actors().filter(self.vehicle_name)) < 1:
         #     print("Scenario ended -- Terminating")
-        #     return False
+        #     time.sleep(1)
+        #     count += 1
+        #     if count > 3:
+        #         return False
+        if len(self.world.get_actors().filter(self.vehicle_name)) < 1:
+            print("Scenario ended -- Terminating")
+            return False
 
         self.hud.tick(self, self.mapname, clock)
         return True
@@ -627,9 +627,9 @@ def game_loop(args):
         client = carla.Client(args.host, args.port)
         client.set_timeout(2.0)
 
-        display = pygame.display.set_mode(
-            (args.width, args.height),
-            pygame.HWSURFACE | pygame.DOUBLEBUF)
+        # display = pygame.display.set_mode(
+        #     (args.width, args.height),
+        #     pygame.HWSURFACE | pygame.DOUBLEBUF)
 
         hud = HUD(args.width, args.height)
         world = World(client.get_world(), hud)
@@ -674,8 +674,9 @@ def game_loop(args):
                     agent.extreme_weather = True
 
             if safe_ttc:
-                if controller.parse_events():
-                    return
+                # if controller.parse_events():
+                #     return
+                pass
             else:
                 hazard_vehicle = world.world.get_actor(vehicle_id)
                 hazard_location = hazard_vehicle.get_location()
@@ -820,8 +821,8 @@ def game_loop(args):
             if (not world.tick(clock)):
                 print("Failure: scenario terminated")
                 break
-            world.render(display)
-            pygame.display.flip()
+            # world.render(display)
+            # pygame.display.flip()
 
             # Set new destination when target has been reached
             if len(agent.get_local_planner().waypoints_queue) < num_min_waypoints and args.loop:

@@ -543,6 +543,7 @@ def main():
     # input test run number
     parser.add_argument('-t', '--test_run', default="-1")
     parser.add_argument('--rep', default="-1")
+    # parser.add_argument('--generate', default = "-1")
 
     arguments = parser.parse_args()
     # pylint: enable=line-too-long

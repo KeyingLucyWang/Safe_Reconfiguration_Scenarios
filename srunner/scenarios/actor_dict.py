@@ -138,7 +138,7 @@ class DynamicObstaclesDict(ActorDict):
             self.speed = actor_dict["speed"]
             self.time_to_reach = actor_dict["time_to_reach"]
         else:
-            self.time_to_reach = random.randint(4, 8)
+            self.time_to_reach = random.randint(2, 6)
 
         self.num_lane_changes = 1
         self.offset = {"orientation": 270, "position": 90, "z": 0.6, "k": 1.0}
@@ -146,7 +146,7 @@ class DynamicObstaclesDict(ActorDict):
         self.default_transform = self._calculate_default(self.start_transform)
         self.name = "DynamicObstaclesAhead"
         
-        self._spawn_attempted = 1
+        self.spawn_attempted = 1
         self._number_of_attempts = 20
 
     def _get_sidewalk_waypoint(self):
@@ -171,7 +171,7 @@ class DynamicObstaclesDict(ActorDict):
         # print("Base transform is blocking objects ", self.start_transform)
         self.start_dist += 0.4
         # print("self.start_dist after update: " + str(self.start_dist))
-        self._spawn_attempted += 1
+        self.spawn_attempted += 1
         # if self._spawn_attempted >= self._number_of_attempts:
         #     raise RuntimeError
 

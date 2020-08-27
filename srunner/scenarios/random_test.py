@@ -134,8 +134,11 @@ class RandomTest(BasicScenario):
         #     self.selected_scenarios = self.select_scenarios(potential_scenarios, self._test)
         #     self.selected_triggers = self.select_triggers(potential_triggers, self._test)
         # else:
+        # i = 0
+        # while i < int(generate):
         if self._rep == 0:
-            print("\nrandomly generating scenarios\n")
+            # i += 1
+            # print("\nrandomly generating scenario {}\n".format(i))
             # randomly select specified number of scenarios and their trigger points
             self.selected_scenarios = self.select_scenarios_random(potential_scenarios, self._num_scenarios)
             self.selected_triggers = random.sample(potential_triggers, self._num_scenarios)            
@@ -202,6 +205,7 @@ class RandomTest(BasicScenario):
                                                                         "",
                                                                         "")
                 elif scenario == "DynamicObstaclesAhead":
+                    # self._initialize_dynamic_obstacles_ahead()
                     data += "{},DynamicObstaclesAhead,{},{},{},{},{},{},{},".format(test_info, 
                                                                         #actor_dict.start_transform.location,
                                                                         #actor_dict.trigger.transform.location,
@@ -251,11 +255,15 @@ class RandomTest(BasicScenario):
             f.write(data)
             f.close()
 
-        else: # retrieve test config from test_config.txt
+        # if int(generate) < 0: # retrieve test config from test_config.txt
+        else:
             f = open('test_config.txt', 'r')
             config_info = f.read()
             f.close()
 
+            # print("test {}".format(test_num))
+            # config_lines = file_content.split("\n")
+            # config_info = config_lines[test_num]
             config_list = config_info.split(",")
 
             # agent = ""
@@ -457,8 +465,11 @@ class RandomTest(BasicScenario):
                 break
 
             except RuntimeError as r:
-                actor_dict._update_transform()
-                if actor_dict._spawn_attempted >= actor_dict._number_of_attempts:
+                # actor_dict._update_transform()
+                actor_dict.start_dist += 0.4
+                # print("self.start_dist after update: " + str(self.start_dist))
+                actor_dict.spawn_attempted += 1
+                if actor_dict.spawn_attempted >= actor_dict._number_of_attempts:
                     raise r
 
     
@@ -483,6 +494,7 @@ class RandomTest(BasicScenario):
                 self._initialize_cut_in(actor_dict)
             elif scenario =="DynamicObstaclesAhead":
                 self._initialize_dynamic_obstacles_ahead(actor_dict)
+                # pass
             else:
                 print("Not implemented error. ")
                 exit(1)

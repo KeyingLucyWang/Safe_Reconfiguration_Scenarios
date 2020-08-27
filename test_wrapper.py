@@ -16,6 +16,11 @@ repetitions = int(args.num_reps)
 tests = int(args.num_tests)
 
 invalid_threshold = 3
+
+f = open("test_agent.txt","w")
+f.write("")
+f.close()
+
 for test in range(tests):
     counter = 0
     invalid_count = 0
@@ -26,12 +31,12 @@ for test in range(tests):
         # f.write("\nautonomous,")
         # f.close()
 
-        # f = open("test_agent.txt","w") #***APPEND IN RANDOM_TEST
-        # f.write("autonomous,")
-        # f.close()
-        # time.sleep(5)
+        f = open("test_agent.txt","a")
+        f.write("autonomous\n")
+        f.close()
+
         os.system('python3 autonomous_agent.py')
-        # time.sleep(3)
+        time.sleep(2)
         # with open("test_log.txt", "r") as f:
         #     last_line = f.readlines()[-1]
         #     valid = last_line.split(",")[-1]
@@ -52,12 +57,12 @@ for test in range(tests):
         # f.write("\ncautious,")
         # f.close()
 
-        # f = open("test_agent.txt","w") #***APPEND IN RANDOM_TEST
-        # f.write("cautious,")
-        # f.close()
+        f = open("test_agent.txt","a")
+        f.write("cautious\n")
+        f.close()
         # time.sleep(5)
         os.system('python3 cautious_agent.py')
-        # time.sleep(3)
+        time.sleep(2)
 
         # with open("test_log.txt", "r") as f:
         #     last_line = f.readlines()[-1]
@@ -76,16 +81,16 @@ for test in range(tests):
     print("\nRunning aggressive human agent\n")
     # run aggressive human agent
     while counter < repetitions:
-        # f = open("test_log.txt","a")
-        # f.write("\naggressive,")
-        # f.close()
+        f = open("test_agent.txt","a")
+        f.write("aggressive\n")
+        f.close()
 
         # f = open("test_agent.txt","w") #***APPEND IN RANDOM_TEST
         # f.write("aggressive,")
         # f.close()
         # time.sleep(5)
         os.system('python3 aggressive_agent.py')
-        # time.sleep(3)
+        time.sleep(2)
 
         # with open("test_log.txt", "r") as f:
         #     last_line = f.readlines()[-1]
@@ -102,16 +107,16 @@ for test in range(tests):
     print("\nRunning reconfiguration agent\n")
     # run reconfiguration agent
     while counter < repetitions:
-        # f = open("test_log.txt","a")
-        # f.write("\nreconfiguration,")
-        # f.close()
+        f = open("test_agent.txt","a")
+        f.write("reconfiguration\n")
+        f.close()
 
         # f = open("test_agent.txt","w") #***APPEND IN RANDOM_TEST
         # f.write("reconfiguration,")
         # f.close()
         # time.sleep(5)
         os.system('python3 reconfiguration_agent.py')
-        # time.sleep(3)
+        time.sleep(2)
 
         # with open("test_log.txt", "r") as f:
         #     last_line = f.readlines()[-1]
