@@ -1,0 +1,15 @@
+autonomous
+autonomous
+cautious
+cautious
+aggressive
+aggressive
+reconfiguration
+reconfiguration
+autonomous
+autonomous
+cautious
+cautious
+aggressive
+aggressive
+reconfiguration
