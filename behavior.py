@@ -14,8 +14,7 @@ from navigation.local_planner_behavior import LocalPlanner, RoadOption
 from navigation.global_route_planner import GlobalRoutePlanner
 from navigation.global_route_planner_dao import GlobalRoutePlannerDAO
 from navigation.types_behavior import Cautious, Aggressive, Normal
-
-from navigation.tools.misc import get_speed, positive
+from misc import get_speed, positive
 
 class BehaviorAgent(Agent):
     """
@@ -273,17 +272,12 @@ class BehaviorAgent(Agent):
             :return vehicle: nearby vehicle
             :return distance: distance to nearby vehicle
         """
-        print("hi")
         vehicle_list = self._world.get_actors().filter("*vehicle*")
         def dist(v): return v.get_location().distance(waypoint.transform.location)
         vehicle_list = [v for v in vehicle_list if dist(v) < 45 and v.id != self.vehicle.id]
-
-        print("hi")
-        if extreme_weather:
-            print("extreme weather")
-        if (extreme_weather and self.behavior.overtake_counter == 0 
-            and self.behavior.tailgate_counter == 0 and random.randint(0, 2) < 1):
-            print("Extreme weather")
+        
+        if (extreme_weather and self.behavior.max_speed==50 and random.randint(0, 2) < 1):
+            print("ignore vehicles")
             vehicle_list = []
 
         if self.direction == RoadOption.CHANGELANELEFT:
@@ -331,8 +325,8 @@ class BehaviorAgent(Agent):
         def dist(w): return w.get_location().distance(waypoint.transform.location)
         walker_list = [w for w in walker_list if dist(w) < 10]
 
-        if (extreme_weather and self.behavior.overtake_counter == 0 
-            and self.behavior.tailgate_counter == 0 and random.randint(0, 5) < 1):
+        if (extreme_weather and self.behavior.max_speed==50 and random.randint(0, 5) < 1):
+            print("ignore pedestrian")
             walker_list = []
 
         if self.direction == RoadOption.CHANGELANELEFT:
@@ -347,7 +341,7 @@ class BehaviorAgent(Agent):
 
         return walker_state, walker, distance
 
-    def car_following_manager(self, vehicle, distance, debug=False):
+    def car_following_manager(self, vehicle, distance, extreme_weather, debug=False):
         """
         Module in charge of car-following behaviors when there's
         someone in front of us.
@@ -379,14 +373,14 @@ class BehaviorAgent(Agent):
 
         return control
 
-    def run_step(self, extreme_weather=False, debug=False):
+    def run_step(self, extreme_weather, debug=False):
         """
         Execute one step of navigation.
 
             :param debug: boolean for debugging
             :return control: carla.VehicleControl
         """
-        print("running one step")
+        # print("running one step")
         control = None
         if self.behavior.tailgate_counter > 0:
             self.behavior.tailgate_counter -= 1

@@ -34,9 +34,10 @@ Use ARROWS or WASD keys for control.
 """
 
 from __future__ import print_function
-from navigation.behavior_agent import BehaviorAgent  # pylint: disable=import-error
-from navigation.roaming_agent import RoamingAgent  # pylint: disable=import-error
-from navigation.basic_agent import BasicAgent
+# from navigation.behavior_agent import BehaviorAgent  # pylint: disable=import-error
+# from navigation.roaming_agent import RoamingAgent  # pylint: disable=import-error
+# from navigation.basic_agent import BasicAgent
+from behavior import BehaviorAgent
 from navigation.types_behavior import Cautious, Aggressive, Normal
 
 # ==============================================================================
@@ -622,7 +623,7 @@ def game_loop(args):
     num_mode_switch = 0
 
     rainy_weather = carla.WeatherParameters(40, 60, 40, 40, 0, 0, 75) 
-
+    weather_changed = False
     try:
         client = carla.Client(args.host, args.port)
         client.set_timeout(2.0)
@@ -672,6 +673,7 @@ def game_loop(args):
                 if dist < 10:
                     world.world.set_weather(rainy_weather)
                     agent.extreme_weather = True
+                    weather_changed = True
 
             if safe_ttc:
                 # if controller.parse_events():
@@ -840,7 +842,7 @@ def game_loop(args):
             speed_limit = world.player.get_speed_limit()
             agent.get_local_planner().set_speed(speed_limit)
 
-            control = agent.run_step()
+            control = agent.run_step(weather_changed)
             world.player.apply_control(control)
 
     finally:

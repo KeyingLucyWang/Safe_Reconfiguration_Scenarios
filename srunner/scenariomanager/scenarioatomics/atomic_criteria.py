@@ -370,9 +370,9 @@ class OtherCollisionTest(Criterion):
         fence_loc = carla.Location(199, -350, 0)
 
         # 'fence' in event.other_actor.type_id.lower() 
-        if (('fence' in event.other_actor.type_id.lower() and (math.sqrt((actor_location.x - fence_loc.x)**2 + (actor_location.y - fence_loc.y)**2) < 10))
-            or ('vehicle' in event.other_actor.type_id)):
-            # print("other vehicle collision")
+        if ('fence' in event.other_actor.type_id.lower() and (math.sqrt((actor_location.x - fence_loc.x)**2 + (actor_location.y - fence_loc.y)**2) < 10)):
+            #or ('vehicle' in event.other_actor.type_id)):
+            print("collision with fence")
             self.test_status = "FAILURE"
 
             # Ignore the current one if it is the same id as before

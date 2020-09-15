@@ -7,8 +7,8 @@ description = ("Agent Wrapper for Testing")
 
 parser = argparse.ArgumentParser(description=description,
                                     formatter_class=RawTextHelpFormatter)
-parser.add_argument('--num_reps', default="1")
-parser.add_argument('--num_tests', default="1")
+parser.add_argument('--num_reps', default="2")
+parser.add_argument('--num_tests', default="10")
 
 args = parser.parse_args()
 
